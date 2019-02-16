@@ -10,7 +10,7 @@ function readAndParse() {
     console.log("file contents: ", fileStr)
     const syntaxTree = parser.parse(fileStr)
 
-    converter.convert(syntaxTree[0])
+    converter.format(syntaxTree[0])
     return syntaxTree[0]
   })
   .catch(err => console.log('err on reading file', err))
