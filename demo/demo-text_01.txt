@@ -1,0 +1,11 @@
+{{
+  <head> {
+    container doc <edgeLabel> {{ <head> { inner doc head value } }}
+  }
+}}
+
+{{
+  <head2> {
+    container doc2 <edgeLabel2> {{ <head2> { inner doc2 head value } }}
+  }
+}}
