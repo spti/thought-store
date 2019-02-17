@@ -3,6 +3,10 @@ const fs = require("fs").promises
 const parser = require("thought-store_syntax-parser")
 const converter = require("../src/convert.js")
 
+function read() {
+  return fs.readFile(path.resolve(__dirname, 'demo-text_01.txt'), {encoding: 'utf8'})
+}
+
 function readAndParse() {
 
   return fs.readFile(path.resolve(__dirname, 'demo-text_01.txt'), {encoding: 'utf8'})
@@ -17,4 +21,4 @@ function readAndParse() {
 }
 
 // readTheFuckingFile()
-module.exports = {readAndParse}
+module.exports = {readAndParse, read, parser, converter}
