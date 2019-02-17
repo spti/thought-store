@@ -16,14 +16,26 @@ function formatValue(rule) {
   const valueFormatted = rule.val.map((rule) => {
     console.log("formatValue, rule", rule);
     if (rule.rule === "text") {
-      return rule.val.value
+      return {
+        type: 'text',
+        value: rule.val.value
+      }
     } else if (rule.rule === "document_pair") {
       return {
-        edgeLabel: rule.fieldName.val.value,
-        document: formatDoc(rule.val)
+        type: "document",
+        value: {
+          edgeLabel: rule.fieldName.val.value,
+          document: formatDoc(rule.val)
+        }
       }
     } else if (rule.rule === "document") {
-      return formatDoc(rule.val)
+      return { // return formatDoc(rule)
+        type: "document",
+        value: {
+          edgeLabel: "defaultLabel",
+          document: formatDoc(rule)
+        }
+      }
     }
   })
 
