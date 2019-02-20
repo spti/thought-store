@@ -142,6 +142,67 @@ const simpleDocNum = {
   // text: utf8.encode("some text here") //.toString() // parseInt(55)
 }
 
+class TestIt {
+  constructor() {
+    this.init()
+  }
+
+  init() {
+    return connect().then((client) => {
+      this.client = client
+      const db = client.db(dbName)
+      return db.dropDatabase()
+    }).then(() => {
+      this.db = this.client.db(dbName)
+    })
+  }
+
+  doTestSimpleStr() {
+    return this.db.createCollection("simpleStr", {
+      validator: {
+        $jsonSchema: simpleSchemaStr
+      },
+      validationAction: "error"
+    }).then((coll) => {
+      this.simpleStrColl = coll
+      console.log('simpleDocNum: ', simpleDocStr);
+      return coll.insertOne(simpleDocStr)
+    }, (err) => {
+      console.log("createCollection err: ", err);
+      return Promise.reject(err)
+    })
+  }
+
+  doTestSimpleNum() {
+    return this.db.createCollection("simpleNum", {
+      validator: {
+        $jsonSchema: simpleSchemaNum
+      },
+      validationAction: "error"
+    }).then((coll) => {
+      this.simpleStrColl = coll
+      console.log('inserting simpleDocNum: ', simpleDocNum);
+      return coll.insertOne(simpleDocNum)
+    }, (err) => {
+      console.log("createCollection err: ", err);
+      return Promise.reject(err)
+    })
+  }
+
+  testSimpleStr() {
+    return this.doTestSimpleStr()
+    .catch((err) => {
+      console.log("testSimpleStr, something gone wrong, err: ", err);
+      this.testSimpleStrErr = err
+    })
+    .finally(() => {
+
+    })
+  }
+
+}
+
+/*
 function doIt() {
   var db = null
 
@@ -194,11 +255,12 @@ function doIt() {
     return db
   })
 }
+*/
 
-function dropDb(db) {
-  return db.dropDatabase()
-}
+// function dropDb(db) {
+//   return db.dropDatabase()
+// }
 
-doIt()
+// doIt()
 
-module.exports = {doIt, createColl, mainSchema, dropDb}
+module.exports = {env: new TestIt()}
