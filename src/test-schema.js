@@ -1,3 +1,6 @@
+// const Buffer = require('buffer').Buffer
+// const utf8 = require('utf8')
+// const Binary = require('mongodb').Binary
 const MongoClient = require('mongodb').MongoClient
 const ObjectId = require('mongodb').ObjectID
 // const db = require("./connection.js")
@@ -86,53 +89,116 @@ function createColl(db, collName, schema) {
 }
 
 const docStr = {
-  _id: new ObjectId(),
+  // _id: new ObjectId(),
   value: {
-    _id: new ObjectId(),
+    // _id: new ObjectId(),
     text: "some random text here"
   }
 }
 
 const docNum = {
-  _id: new ObjectId(),
+  // _id: new ObjectId(),
   value: {
-    _id: new ObjectId(),
-    quantity: 56
+    // _id: new ObjectId(),
+    quantity: parseInt(56)
   }
 }
 
-connect()
-.then((client) => {
-  const db = client.db(dbName)
-  return db.createCollection("main", {
-    validator: {
-      $jsonSchema: mainSchema
-    },
-    validationAction: "error"
-  })
-})
-.then((mainColl) => {
-  console.log('inserting docStr: ', docStr);
-  return mainColl.insertOne(docStr)
-}, (err) => {
-  console.log("createCollection err: ", err);
-  return Promise.reject(err)
-})
-.then((result) => {
-  console.log("inserted docStr, result: ", result);
-  console.log('inserting docNum: ', docNum);
-  return mainColl.insertOne(docNum)
-}, (err) => {
-  console.log('docStr insert err: ', err);
-  return Promise.reject(err)
-})
-.then((result) => {
-  console.log("inserted docNum, result: ", result);
-  return result
-}, (err) => {
-  console.log('docNum insert err: ', err);
-  return Promise.reject(err)
-})
-.catch((err) => {console.log(err)})
+const simpleSchemaStr = {
+  bsonType: "object",
+  properties: {
+    // _id: {
+    //   bsonType: "objectId"
+    // },
+    text: {
+      bsonType: "string"
+    }
+  }
+}
 
-module.exports = {connect, createColl, mainSchema}
+const simpleDocStr = {
+  // _id: new ObjectId(),
+  text: "some fucking string" //.toString() // parseInt(55)
+  // text: Buffer.from("some text here", 'utf8') //.toString() // parseInt(55)
+  // text: utf8.encode("some text here") //.toString() // parseInt(55)
+}
+
+const simpleSchemaNum = {
+  bsonType: "object",
+  properties: {
+    // _id: {
+    //   bsonType: "objectId"
+    // },
+    amount: {
+      bsonType: "number"
+    }
+  }
+}
+
+const simpleDocNum = {
+  // _id: new ObjectId(),
+  amount: 55 //.toString() // parseInt(55)
+  // text: Buffer.from("some text here", 'utf8') //.toString() // parseInt(55)
+  // text: utf8.encode("some text here") //.toString() // parseInt(55)
+}
+
+function doIt() {
+  var db = null
+
+  return connect()
+  .then((client) => {
+    db = client.db(dbName)
+    return db.dropDatabase()
+    .then(() => {console.log('dropped database'); return client})
+  })
+  .then((client) => {
+    db = client.db(dbName)
+    return db.createCollection("simpleStr", {
+      validator: {
+        $jsonSchema: simpleSchemaStr
+      },
+      validationAction: "error"
+    })
+  })
+
+  .then((simpleStr) => {
+    console.log('inserting docStr: ', simpleDocStr);
+    return simpleStr.insertOne(simpleDocStr)
+  }, (err) => {
+    console.log("createCollection err: ", err);
+    return Promise.reject(err)
+  })
+  .then((result) => {
+    console.log("inserted docStr, result: ", result);
+    console.log('inserting docNum: ', docNum);
+    return simpleStr.insertOne(docNum)
+  }, (err) => {
+    console.log('docStr insert err: ', err);
+    return Promise.reject(err)
+  })
+
+  .then((result) => {
+    console.log("inserted docNum, result: ", result);
+    return result
+  }, (err) => {
+    console.log('docNum insert err: ', err);
+    return Promise.reject(err)
+  })
+
+  .catch((err) => {
+    console.log(err)
+    return db
+  })
+  .finally(() => {
+    console.log('finally, db', db);
+    return db
+  })
+}
+
+function dropDb(db) {
+  return db.dropDatabase()
+}
+
+doIt()
+
+module.exports = {doIt, createColl, mainSchema, dropDb}
