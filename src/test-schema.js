@@ -79,31 +79,6 @@ function connect() {
   })
 }
 
-function createColl(db, collName, schema) {
-  db.createCollection(collName, {
-    validator: {
-      $jsonSchema: schema
-    },
-    validationAction: "error"
-  })
-}
-
-const docStr = {
-  // _id: new ObjectId(),
-  value: {
-    // _id: new ObjectId(),
-    text: "some random text here"
-  }
-}
-
-const docNum = {
-  // _id: new ObjectId(),
-  value: {
-    // _id: new ObjectId(),
-    quantity: parseInt(56)
-  }
-}
-
 const simpleSchemaStr = {
   bsonType: "object",
   properties: {
@@ -116,13 +91,6 @@ const simpleSchemaStr = {
   }
 }
 
-const simpleDocStr = {
-  // _id: new ObjectId(),
-  text: "some fucking string" //.toString() // parseInt(55)
-  // text: Buffer.from("some text here", 'utf8') //.toString() // parseInt(55)
-  // text: utf8.encode("some text here") //.toString() // parseInt(55)
-}
-
 const simpleSchemaNum = {
   bsonType: "object",
   properties: {
@@ -133,6 +101,30 @@ const simpleSchemaNum = {
       bsonType: "number"
     }
   }
+}
+
+const compoundSchema = {
+  bsonType: "object",
+  properties: {
+    value: {
+      oneOf: [simpleSchemaNum, simpleSchemaStr]
+    }
+  }
+}
+
+const docNum = {
+  // _id: new ObjectId(),
+  value: {
+    // _id: new ObjectId(),
+    quantity: parseInt(56)
+  }
+}
+
+const simpleDocStr = {
+  // _id: new ObjectId(),
+  text: "some fucking string" //.toString() // parseInt(55)
+  // text: Buffer.from("some text here", 'utf8') //.toString() // parseInt(55)
+  // text: utf8.encode("some text here") //.toString() // parseInt(55)
 }
 
 const simpleDocNum = {
@@ -154,6 +146,25 @@ class TestIt {
       return db.dropDatabase()
     }).then(() => {
       this.db = this.client.db(dbName)
+    })
+  }
+
+  doTestCompound() {
+    return this.db.createCollection("compound", {
+      validator: {
+        $jsonSchema: compoundSchema
+      },
+      validationAction: "error"
+    }).then((coll) => {
+      this.compoundColl = coll
+      console.log('compound.insert docStr: ', simpleDocStr);
+      return coll.insertOne(simpleDocStr)
+    })
+
+    .then((result) => {
+      console.log('compound.insert docStr, result: ', result);
+      console.log('compound.insert docNum: ', simpleDocNum);
+      return this.compoundColl.insertOne(simpleDocNum)
     })
   }
 
@@ -186,6 +197,17 @@ class TestIt {
     }, (err) => {
       console.log("createCollection err: ", err);
       return Promise.reject(err)
+    })
+  }
+
+  testCompound() {
+    return this.doTestCompound()
+    .catch((err) => {
+      console.log("testCompound, something gone wrong, err: ", err);
+      this.testCompoundErr = err
+    })
+    .finally(() => {
+
     })
   }
 
