@@ -180,7 +180,7 @@ class TestIt {
       },
       validationAction: "error"
     }).then((coll) => {
-      this.simpleStrColl = coll
+      this.simpleNumColl = coll
       console.log('inserting simpleDocNum: ', simpleDocNum);
       return coll.insertOne(simpleDocNum)
     }, (err) => {
@@ -194,6 +194,17 @@ class TestIt {
     .catch((err) => {
       console.log("testSimpleStr, something gone wrong, err: ", err);
       this.testSimpleStrErr = err
+    })
+    .finally(() => {
+
+    })
+  }
+
+  testSimpleNum() {
+    return this.doTestSimpleNum()
+    .catch((err) => {
+      console.log("testSimpleStr, something gone wrong, err: ", err);
+      this.testSimpleNumErr = err
     })
     .finally(() => {
 
