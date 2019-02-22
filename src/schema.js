@@ -20,32 +20,31 @@
 */
 
 // this can be used for text, urls, etc
-const textResources = {
-  type: "object",
+const textResource = {
+  bsonType: "object",
   properties: {
-    value: {
-      type: "string"
+    text: {
+      bsonType: "string"
     }
   }
 }
 
-// this can be used for text, urls, etc
-const resourceStr = {
-  type: "object",
+const urlResource = {
+  bsonType: "object",
   properties: {
-    value: {
-      type: "string"
+    url: {
+      bsonType: "string"
     }
   }
 }
 
 const resources = {
-  type: "object",
-  properties: {
-    oneOf: [resourceStr]
-  }
+  bsonType: "object",
+  oneOf: [textResource, urlResource]
 }
 
 const entities = {
 
 }
+
+module.exports = {resources}
