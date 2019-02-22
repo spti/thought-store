@@ -87,7 +87,8 @@ const simpleSchemaStr = {
     // },
     text: {
       bsonType: "string"
-    }
+    },
+    // additionalProperties: false
   }
 }
 
@@ -99,16 +100,61 @@ const simpleSchemaNum = {
     // },
     amount: {
       bsonType: "number"
-    }
+    },
+    // additionalProperties: false
   }
 }
 
 const compoundSchema = {
   bsonType: "object",
   properties: {
+    _id: {
+      bsonType: 'objectId'
+    },
     value: {
-      oneOf: [simpleSchemaNum, simpleSchemaStr]
+      anyOf: [
+        {bsonType: 'string'},
+        {bsonType: 'number'},
+        // {properties: {nestedA: {bsonType: "string"}}},
+        // {properties: {nestedB: {bsonType: "string"}}},
+
+        {bsonType: "object", properties: {nestedC: {bsonType: "string"}}},
+        {
+          bsonType: "object",
+          properties: {
+            nestedX: {bsonType: "number"},
+            nestedY: {bsonType: "string"},
+            nestedZ: {bsonType: "bool"},
+          }
+        },
+      ]
+      // oneOf: [{bsonType: 'string'}, {bsonType: 'number'}, {bsonType: 'object', properties: {nestedV: {bsonType: "string"}}}]
+      // oneOf: [simpleSchemaNum, simpleSchemaStr]
     }
+  },
+  // additionalProperties: false
+}
+
+const testSchema = {
+  properties: {
+    someOf: {
+      oneOf: []
+    }
+  }
+}
+
+const compoundSchema01 = {
+  // bsonType: "object",
+  oneOf: [
+    {properties: {text: {bsonType: "string"}} },
+    {properties: {amount: {bsonType: "number"}} }
+  ],
+  // additionalProperties: false
+}
+
+const compoundSchemaArchi = {
+  properties: {
+    value: { allOf: [compoundSchema01] }
   }
 }
 
@@ -132,6 +178,44 @@ const simpleDocNum = {
   amount: 55 //.toString() // parseInt(55)
   // text: Buffer.from("some text here", 'utf8') //.toString() // parseInt(55)
   // text: utf8.encode("some text here") //.toString() // parseInt(55)
+}
+
+const compoundDocStr = {
+  _id: new ObjectId(),
+  value: "this is a eesay, not essay"
+}
+
+const compoundDocNum = {
+  _id: new ObjectId(),
+  value: 67
+}
+
+const compoundDocObjA = {
+  _id: new ObjectId(),
+  value: {nestedA: "nestedStringA"}
+}
+
+const compoundDocObjC = {
+  _id: new ObjectId(),
+  value: {nestedC: "nestedStringC"}
+}
+
+const compoundDocObjXYZ = {
+  _id: new ObjectId(),
+  value: {
+    nestedX: 77,
+    nestedY: "nestedStringC",
+    nestedZ: false,
+  }
+}
+
+const compoundDocObjXYZ01 = {
+  _id: new ObjectId(),
+  value: {
+    nestedX: 77,
+    nestedY: "nestedStringC",
+    nestedZ: false,
+  }
 }
 
 class TestIt {
@@ -163,9 +247,20 @@ class TestIt {
 
     .then((result) => {
       console.log('compound.insert docStr, result: ', result);
-      console.log('compound.insert docNum: ', simpleDocNum);
-      return this.compoundColl.insertOne(simpleDocNum)
+      console.log('compound.insert docNum: ', compoundDocObjXYZ);
+      return this.compoundColl.insertOne(compoundDocObjXYZ)
     })
+    .then((result) => {
+      console.log("compound.inserted docNum, result: ", result);
+      // const docRandom = {
+      //   _id: new ObjectId(),
+      //   value: false
+      // }
+
+      // console.log('compound.insert random doc:', docRandom);
+      return this.compoundColl.insertOne(compoundDocObjC)
+    })
+    .then(res => console.log('inserted XYZ doc, res:', res))
   }
 
   doTestSimpleStr() {
