@@ -82,27 +82,27 @@ function connect() {
 const simpleSchemaStr = {
   bsonType: "object",
   properties: {
-    // _id: {
-    //   bsonType: "objectId"
-    // },
+    _id: {
+      bsonType: "objectId"
+    },
     text: {
       bsonType: "string"
     },
-    // additionalProperties: false
-  }
+  },
+  additionalProperties: false
 }
 
 const simpleSchemaNum = {
   bsonType: "object",
   properties: {
-    // _id: {
-    //   bsonType: "objectId"
-    // },
+    _id: {
+      bsonType: "objectId"
+    },
     amount: {
       bsonType: "number"
     },
-    // additionalProperties: false
-  }
+  },
+  additionalProperties: false
 }
 
 const compoundSchema = {
@@ -144,10 +144,12 @@ const testSchema = {
 }
 
 const compoundSchema01 = {
-  // bsonType: "object",
-  oneOf: [
-    {properties: {text: {bsonType: "string"}} },
-    {properties: {amount: {bsonType: "number"}} }
+  bsonType: "object",
+  anyOf: [
+    simpleSchemaStr,
+    simpleSchemaNum
+    // {properties: {text: {bsonType: "string"}} },
+    // {properties: {amount: {bsonType: "number"}} }
   ],
   // additionalProperties: false
 }
@@ -167,14 +169,14 @@ const docNum = {
 }
 
 const simpleDocStr = {
-  // _id: new ObjectId(),
+  _id: new ObjectId(),
   text: "some fucking string" //.toString() // parseInt(55)
   // text: Buffer.from("some text here", 'utf8') //.toString() // parseInt(55)
   // text: utf8.encode("some text here") //.toString() // parseInt(55)
 }
 
 const simpleDocNum = {
-  // _id: new ObjectId(),
+  _id: new ObjectId(),
   amount: 55 //.toString() // parseInt(55)
   // text: Buffer.from("some text here", 'utf8') //.toString() // parseInt(55)
   // text: utf8.encode("some text here") //.toString() // parseInt(55)
@@ -236,7 +238,7 @@ class TestIt {
   doTestCompound() {
     return this.db.createCollection("compound", {
       validator: {
-        $jsonSchema: compoundSchema
+        $jsonSchema: compoundSchema01
       },
       validationAction: "error"
     }).then((coll) => {
@@ -247,18 +249,19 @@ class TestIt {
 
     .then((result) => {
       console.log('compound.insert docStr, result: ', result);
-      console.log('compound.insert docNum: ', compoundDocObjXYZ);
-      return this.compoundColl.insertOne(compoundDocObjXYZ)
+      console.log('compound.insert docNum: ', simpleDocNum);
+      return this.compoundColl.insertOne(simpleDocNum)
     })
     .then((result) => {
       console.log("compound.inserted docNum, result: ", result);
-      // const docRandom = {
-      //   _id: new ObjectId(),
-      //   value: false
-      // }
+      const docRandom = {
+        _id: new ObjectId(),
+        randomProp: false
+      }
 
       // console.log('compound.insert random doc:', docRandom);
-      return this.compoundColl.insertOne(compoundDocObjC)
+      return this.compoundColl.insertOne(docRandom)
+      // return
     })
     .then(res => console.log('inserted XYZ doc, res:', res))
   }
