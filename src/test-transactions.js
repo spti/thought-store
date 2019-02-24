@@ -5,6 +5,20 @@ const url = "mongodb://localhost:27017"
 const urlRs = "mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019"
 const dbName = "test-db"
 
+const tree = {
+  name: "0--01"
+  children: [
+    { name: "1--01", children: [] },
+    { name: "1--02", children: [ {name: "2--01", children: []} ] },
+    { name: "1--03", children: [] },
+  ]
+}
+
+const compound = {
+  content: "the content",
+  reference: { referencedContent: "the content of the referenced document" }
+}
+
 class Test {
   constructor(url, dbName, options) {
     options = options || {}
@@ -23,9 +37,15 @@ class Test {
       this.log('created db:', db)
 
       this.db = db
-      return this.createCollection(this.db)
+      return this.createCollectionA(this.db)
       .then((collection) => {
-        this.log("created collection:", collection)
+        this.log("created collectionA:", collection)
+        this.collectionA = collection
+        return this.createCollectionB(this.db)
+      })
+      .then((collection) => {
+        this.log("created collectionB:", collection)
+        this.collectionB = collection
         return this
       })
     })
@@ -39,8 +59,8 @@ class Test {
     })
   }
 
-  createCollection(db) {
-    return db.createCollection("test-collection", {
+  createCollectionA(db) {
+    return db.createCollection("test-collectionA", {
       // validator: {
       //   $jsonSchema: resources
       // }
@@ -48,6 +68,84 @@ class Test {
       // return collection.createIndex({text: "text"})
       return collection
     })
+  }
+
+  createCollectionB(db) {
+    return db.createCollection("test-collectionB", {
+      // validator: {
+      //   $jsonSchema: resources
+      // }
+    }).then((collection) => {
+      // return collection.createIndex({text: "text"})
+      return collection
+    })
+  }
+
+  writeViaTransaction() {
+    const session = this.client.createSession()
+    return this.doWriteViaTransaction(session)
+    .then(
+      (result) => {
+        session.endSession()
+        return {
+          msg: "write succeeded",
+          result
+        }
+      },
+
+      // transaction aborted, decide whether to retry write or return the error
+      (err) => {
+
+        // we don't retry, so I end the session
+        session.endSession()
+        return Promise.reject({
+          msg: "write failed, err",
+          err: err
+        })
+      }
+    )
+  }
+
+  doWriteViaTransaction(session) {
+    session.startTransaction()
+
+    return this.writeJoin(session)
+    .then((results) => {
+      this.log('writeJoin resolved, committing transaction', results)
+      return session.commitTransaction()
+        .then(() => {
+          return results
+        })
+    }, (err) => {
+      this.log('writeJoin rejected, aborting transaction', results)
+      return session.abortTransaction()
+      .then(() => {
+        return Promise.reject(err)
+      })
+    })
+  }
+
+  writeJoin(session) {
+    const results = []
+    return this.collectionB.insertOne(compound.reference, {session: session})
+    .then((writeResult) => {
+      results.push(writeResult)
+      this.log("saved child doc:", writeResult)
+
+      return this.collectionA.insertOne({
+        content: compound.content,
+        reference: writeResult.insertedId
+      }, {session: session})
+    })
+    .then((writeResult) => {
+      results.push(writeResult)
+      this.log("saved root doc:", writeResult)
+      return results
+    })
+  }
+
+  read() {
+
   }
 
   drop() {
