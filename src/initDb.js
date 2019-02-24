@@ -47,6 +47,57 @@ const entities = {
   bsonType: "object",
 }
 
+const labels = {
+  bsonType: "object",
+  properties: {
+    name: { bsonType: "string" }
+  },
+  additionalProperties: false
+}
+
+/*
+const labels = {
+  schema: {
+    bsonType: "object",
+    properties: {
+      name: { bsonType: "string" }
+    },
+    additionalProperties: false
+  },
+
+  createCollection: function(db) {
+    return db.createCollection("labels", {
+      validator: {
+        $jsonSchema: this.schema
+      },
+      validationAction: "error"
+    })
+    .then((collection) => {
+      collection.createIndex({})
+    })
+  }
+}
+*/
+
+const edges = {
+  bsonType: "object",
+  properties: {
+    _id: {
+      bsonType: "objectId"
+    },
+    head: {
+      bsonType: "objectId"
+    },
+    tail: {
+      bsonType: "objectId"
+    },
+    // label can be an entity (and an entity can be a reference to a labels collection, but doesnt have to)
+    label: {
+      bsonType: "objectId"
+    }
+  }
+}
+
 class DbWrap {
   constructor(url, dbName) {
     this.client = new MongoClient(url)
