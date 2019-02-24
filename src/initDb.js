@@ -87,8 +87,8 @@ class DbWrap {
         $jsonSchema: resources
       }
     }).then((collection) => {
-      // return collection.createIndex({text: "text"})
-      return collection
+      return collection.createIndex({text: "text"})
+      // return collection
     })
   }
 }

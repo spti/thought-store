@@ -59,6 +59,14 @@ class TheTest {
     //   console.log("resources.insertMany docs failed, err: ", err)
     // })
   }
+
+  searchText(text) {
+    return this.dbWrap.db.collection("resources")
+      .find({$text: {$search: text}}).toArray()
+      // .then((result) => {test.findRes = result; console.log('find result:', result)})
+      // .catch((err) => {console.log('textColl.find failed, err:', err)})
+
+  }
 }
 /*
 drop the db
