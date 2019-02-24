@@ -62,6 +62,17 @@ class DbWrap {
     })
   }
 
+  drop() {
+    if (this.db) {
+      return this.db.dropDatabase()
+    } else {
+      return this.wireUp(this.client, this.dbName)
+      .then((db) => {
+        return db.dropDatabase()
+      })
+    }
+  }
+
   wireUp(client, dbName) {
     return client.connect()
     .then((client) => {
