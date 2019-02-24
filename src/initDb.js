@@ -43,6 +43,10 @@ const resources = {
   anyOf: [textResource, urlResource]
 }
 
+const entities = {
+  bsonType: "object",
+}
+
 class DbWrap {
   constructor(url, dbName) {
     this.client = new MongoClient(url)
