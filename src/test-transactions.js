@@ -6,7 +6,7 @@ const urlRs = "mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019"
 const dbName = "test-db"
 
 const tree = {
-  name: "0--01"
+  name: "0--01",
   children: [
     { name: "1--01", children: [] },
     { name: "1--02", children: [ {name: "2--01", children: []} ] },
@@ -82,7 +82,7 @@ class Test {
   }
 
   writeViaTransaction() {
-    const session = this.client.createSession()
+    const session = this.client.startSession()
     return this.doWriteViaTransaction(session)
     .then(
       (result) => {
@@ -171,6 +171,11 @@ const test = new Test(urlRs, dbName, {devEnv: true, clientOps: {replicaSet: "rs"
 
 function run() {
   return test.init()
+  .then(() => {
+    return a.test.writeViaTransaction()
+    .then((res) => {test.log('writetransactionres', res)})
+    .catch((err) => {test.log('writeviatransactionerr', err)})
+  })
 }
 
 module.exports = {test, run}
