@@ -83,7 +83,7 @@ class TestIt {
   doTestCompound() {
     return this.db.createCollection("compound", {
       validator: {
-        $jsonSchema: compoundSchema01
+        $jsonSchema: compoundSchema
       },
       validationAction: "error"
     }).then((coll) => {
