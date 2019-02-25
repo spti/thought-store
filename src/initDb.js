@@ -2,148 +2,36 @@ const MongoClient = require('mongodb').MongoClient
 // const ObjectId = require('mongodb').ObjectID
 // const schemas = require('./schema.js')
 
-const resources = {
-  schema: {
-    bsonType: "object",
-    anyOf: [
-      // text
-      {
-        bsonType: "object",
-        properties: {
-          _id: {
-            bsonType: "objectId"
-          },
-          text: {
-            bsonType: "string"
-          }
-        },
-        required: ['_id', 'text'],
-        additionalProperties: false
-      },
-
-      // url
-      {
-        bsonType: "object",
-        properties: {
-          _id: {
-            bsonType: "objectId"
-          },
-          url: {
-            bsonType: "string"
-          }
-        },
-        required: ['_id', 'url'],
-        additionalProperties: false
-      }
-    ]
-  },
-  create: function(db) {
-    return db.createCollection("entities", {
-      validator: {
-        $jsonSchema: this.schema
-      },
-      validationAction: "error"
-    }).then((collection) => {
-      return collection.createIndex({text: "text"})
-      // return collection
-    })
-  }
-}
-
-const entities = {
-  schema: {
-    bsonType: "object",
-    properties: {
-      _id: 'objectId',
-      refs: [
-        {
-          // ref to resources, or entities
-          ref: { bsonType: "objectId" },
-          // ref to labels, or entities
-          label: { bsonType: "objectId" }
-        }
-      ],
-      view: {
-        bsonType: "objectId"
-      }
-    },
-    required: ['_id', 'refs'],
-    additionalProperties: false
-  },
-  create: function(db) {
-    return db.createCollection("entities", {
-      validator: {
-        $jsonSchema: this.schema
-      },
-      validationAction: "error"
-    })
-  }
-}
-
-const labels = {
-  schema: {
-    bsonType: "object",
-    properties: {
-      _id: {bsonType: "objectId"},
-      name: { bsonType: "string" }
-    },
-    required: ['_id', 'name'],
-    additionalProperties: false,
-  },
-
-  createCollection: function(db) {
-    return db.createCollection("labels", {
-      validator: {
-        $jsonSchema: this.schema
-      },
-      validationAction: "error"
-    })
-    .then((collection) => {
-      return collection.createIndex({name: 1}, {unique: true})
-    })
-  }
-}
-
-const views = {
-  schema: {
-    bsonType: "objectId",
-    properties: {
-      _id: {
-        bsonType: "string"
-      },
-      url: {
-        bsonType: "string"
-      }
-    },
-    required: ['_id', 'url'],
-    additionalProperties: false
-  },
-  create: function(db) {
-    return db.createCollection("views", {
-      validator: {
-        $jsonSchema: this.schema
-      },
-      validationAction: "error"
-    })
-  }
-}
 
 class DbWrap {
-  constructor(url, dbName) {
-    this.client = new MongoClient(url)
+  constructor(url, dbName, models, options) {
+    options = options || {}
+    this.devEnv = options.devEnv || false
+    this.logs = []
+
+    this.client = new MongoClient(url, options.clientOps || {})
     this.dbName = dbName
-    // this.resourcesSchema = resourcesSchema
+
+    this.init()
+    .then((lastCreatedColl) => {
+      this.log("created collections", lastCreatedColl)
+    })
+    .catch((err) => {
+      this.log("errored somewhere during init", err)
+    })
+
   }
 
   init() {
-    return this.wireUp(this.client, this.dbName)
+    return this.client.connect()
+    .then(() => {
+      try {
+        this.db = this.client.db(this.dbName)
+      } catch(err) {
+        return Promise.reject(err)
+      }
 
-    .then((db) => {
-      this.db = db
-      return this.createResources(this.db)
-      .then((result) => {
-        return this
-      })
+      return this.createCollections(this.models.map(m => m))
     })
   }
 
@@ -158,33 +46,29 @@ class DbWrap {
     }
   }
 
-  wireUp(client, dbName) {
-    return client.connect()
-    .then((client) => {
-      const db = client.db(dbName)
-      return db
-    })
-  }
+  createCollections(models) {
+    const model = models.shift()
 
-  createResources(db) {
-    return db.createCollection("resources", {
-      validator: {
-        $jsonSchema: resources
+    return model.create.call(model, this.db)
+    .then((collection) => {
+      this.log("created collection", collection)
+
+      if (models.length > 0) {
+        return this.createCollections(models)
+      } else {
+        return collection
       }
-    }).then((collection) => {
-      return collection.createIndex({text: "text"})
-      // return collection
     })
   }
-}
 
-function instantiateDbWrap() {
-  const url = "mongodb://localhost:27017"
-  const dbName = "thought-store"
-
-  return new DbWrap(url, dbName)
+  log(msg, data) {
+    if (this.devEnv) {
+      this.logs.unshift({msg, data})
+      console.log(msg, data)
+    }
+  }
 }
 
 module.exports = {
-  instantiateDbWrap
+  DbWrap
 }
