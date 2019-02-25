@@ -1,4 +1,4 @@
-const DbWrap = require("./initDb.js")
+const DbWrap = require("./initDb.js").DbWrap
 const models = require("./models.js")
 
 function instantiateDbWrap() {

@@ -9,6 +9,8 @@ class DbWrap {
     this.devEnv = options.devEnv || false
     this.logs = []
 
+    this.models = models
+
     this.client = new MongoClient(url, options.clientOps || {})
     this.dbName = dbName
 

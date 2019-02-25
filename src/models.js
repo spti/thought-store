@@ -56,13 +56,16 @@ const resources = {
     ]
   },
   create: function(db) {
-    return db.createCollection("entities", {
+    return db.createCollection("resources", {
       validator: {
         $jsonSchema: this.schema
       },
       validationAction: "error"
     }).then((collection) => {
       return collection.createIndex({text: "text"})
+      .then(() => {
+        return collection
+      })
       // return collection
     })
   }
@@ -72,15 +75,23 @@ const entities = {
   schema: {
     bsonType: "object",
     properties: {
-      _id: 'objectId',
-      refs: [
-        {
-          // ref to resources, or entities
-          ref: { bsonType: "objectId" },
-          // ref to labels, or entities
-          label: { bsonType: "objectId" }
-        }
-      ],
+      _id: {bsonType: 'objectId'},
+      refs: {
+        bsonType: "array",
+        items: {
+          bsonType: "object",
+          properties: {
+            // ref to resources, or entities
+            ref: { bsonType: "objectId" },
+            // ref to labels, or entities
+            label: { bsonType: "objectId" }
+          },
+          required: ['ref'],
+          additionalProperties: false
+        },
+        additionalItems: false,
+        minItems: 1
+      },
       view: {
         bsonType: "objectId"
       }
@@ -118,6 +129,9 @@ const labels = {
     })
     .then((collection) => {
       return collection.createIndex({name: 1}, {unique: true})
+      .then(() => {
+        return collection
+      })
     })
   }
 }
