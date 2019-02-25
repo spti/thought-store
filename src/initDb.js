@@ -2,67 +2,93 @@ const MongoClient = require('mongodb').MongoClient
 // const ObjectId = require('mongodb').ObjectID
 // const schemas = require('./schema.js')
 
-// function initDbFactory() {
-//
-//   return {
-//     schema: {textResource, urlResource, resources},
-//     initDb: new DbWrap(url, dbName),
-//     url: url,
-//     dbName: dbName
-//   }
-// }
-
-const textResource = {
-  bsonType: "object",
-  properties: {
-    _id: {
-      bsonType: "objectId"
-    },
-    text: {
-      bsonType: "string"
-    }
-  },
-  additionalProperties: false
-}
-
-const urlResource = {
-  bsonType: "object",
-  properties: {
-    _id: {
-      bsonType: "objectId"
-    },
-    url: {
-      bsonType: "string"
-    }
-  },
-  additionalProperties: false
-}
-
 const resources = {
-  bsonType: "object",
-  anyOf: [textResource, urlResource]
+  schema: {
+    bsonType: "object",
+    anyOf: [
+      // text
+      {
+        bsonType: "object",
+        properties: {
+          _id: {
+            bsonType: "objectId"
+          },
+          text: {
+            bsonType: "string"
+          }
+        },
+        required: ['_id', 'text'],
+        additionalProperties: false
+      },
+
+      // url
+      {
+        bsonType: "object",
+        properties: {
+          _id: {
+            bsonType: "objectId"
+          },
+          url: {
+            bsonType: "string"
+          }
+        },
+        required: ['_id', 'url'],
+        additionalProperties: false
+      }
+    ]
+  },
+  create: function(db) {
+    return db.createCollection("entities", {
+      validator: {
+        $jsonSchema: this.schema
+      },
+      validationAction: "error"
+    }).then((collection) => {
+      return collection.createIndex({text: "text"})
+      // return collection
+    })
+  }
 }
 
 const entities = {
-  bsonType: "object",
-}
-
-const labels = {
-  bsonType: "object",
-  properties: {
-    name: { bsonType: "string" }
+  schema: {
+    bsonType: "object",
+    properties: {
+      _id: 'objectId',
+      refs: [
+        {
+          // ref to resources, or entities
+          ref: { bsonType: "objectId" },
+          // ref to labels, or entities
+          label: { bsonType: "objectId" }
+        }
+      ],
+      view: {
+        bsonType: "objectId"
+      }
+    },
+    required: ['_id', 'refs'],
+    additionalProperties: false
   },
-  additionalProperties: false
+  create: function(db) {
+    return db.createCollection("entities", {
+      validator: {
+        $jsonSchema: this.schema
+      },
+      validationAction: "error"
+    })
+  }
 }
 
-/*
 const labels = {
   schema: {
     bsonType: "object",
     properties: {
+      _id: {bsonType: "objectId"},
       name: { bsonType: "string" }
     },
-    additionalProperties: false
+    required: ['_id', 'name'],
+    additionalProperties: false,
   },
 
   createCollection: function(db) {
@@ -73,28 +99,32 @@ const labels = {
       validationAction: "error"
     })
     .then((collection) => {
-      collection.createIndex({})
+      return collection.createIndex({name: 1}, {unique: true})
     })
   }
 }
-*/
 
-const edges = {
-  bsonType: "object",
-  properties: {
-    _id: {
-      bsonType: "objectId"
+const views = {
+  schema: {
+    bsonType: "objectId",
+    properties: {
+      _id: {
+        bsonType: "string"
+      },
+      url: {
+        bsonType: "string"
+      }
     },
-    head: {
-      bsonType: "objectId"
-    },
-    tail: {
-      bsonType: "objectId"
-    },
-    // label can be an entity (and an entity can be a reference to a labels collection, but doesnt have to)
-    label: {
-      bsonType: "objectId"
-    }
+    required: ['_id', 'url'],
+    additionalProperties: false
+  },
+  create: function(db) {
+    return db.createCollection("views", {
+      validator: {
+        $jsonSchema: this.schema
+      },
+      validationAction: "error"
+    })
   }
 }
 
