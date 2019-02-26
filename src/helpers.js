@@ -17,24 +17,21 @@ function formatValue(rule) {
     console.log("formatValue, rule", rule);
     if (rule.rule === "text") {
       return {
-        type: 'text',
-        value: rule.val.value
+        type: 'resource',
+        subtype: 'text',
+        text: rule.val.value
       }
     } else if (rule.rule === "document_pair") {
       return {
-        type: "document",
-        value: {
-          edgeLabel: rule.fieldName.val.value,
-          document: formatDoc(rule.val)
-        }
+        type: "entity",
+        edgeLabel: rule.fieldName.val.value,
+        ref: formatDoc(rule.val)
       }
     } else if (rule.rule === "document") {
       return { // return formatDoc(rule)
-        type: "document",
-        value: {
-          edgeLabel: "defaultLabel",
-          document: formatDoc(rule)
-        }
+        type: "entity",
+        edgeLabel: "defaultLabel",
+        ref: formatDoc(rule)
       }
     }
   })

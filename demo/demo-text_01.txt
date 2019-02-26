@@ -1,8 +1,8 @@
 {{
-  <head> {
+  <refs> {
     container doc <edgeLabel> {{
-      <headInner> { inner doc head value <innerDocEdge> {{
-        <headInner2> { inner val level 2 }
+      <refsInner> { inner doc head value <innerDocEdge> {{
+        <refsInner2> { inner val level 2 }
       }} and some other text in the inner doc! shit.! }
     }}
   }
