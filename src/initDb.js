@@ -63,6 +63,10 @@ class DbWrap {
     })
   }
 
+  saveEntity() {
+    
+  }
+
   log(msg, data) {
     if (this.devEnv) {
       this.logs.unshift({msg, data})

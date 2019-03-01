@@ -1,6 +1,5 @@
 const path = require("path")
-const fs = require("fs").promises
-const parser = require("thought-store_syntax-parser")
+const helpers = require('../src/helpers.js')
 // const converter = require("../src/convert.js")
 
 
@@ -14,16 +13,7 @@ class Demo {
   }
 
   parseFile() {
-
-    return fs.readFile(path.resolve(__dirname, 'demo-text_02-01.txt'), {encoding: 'utf8'})
-    .then((fileStr) => {
-      console.log("file contents: ", fileStr)
-
-      return parser.parse(fileStr)
-
-      // return converter.format(syntaxTree[0])
-      // return syntaxTree[0]
-    })
+    return helpers.parseFile(path.resolve(__dirname, 'demo-text_02-01.txt'))
   }
 
   run() {

@@ -81,12 +81,13 @@ const entities = {
         items: {
           bsonType: "object",
           properties: {
+            _id: {bsonType: "objectId"},
             // ref to resources, or entities
             ref: { bsonType: "objectId" },
             // ref to labels, or entities
             label: { bsonType: "objectId" }
           },
-          required: ['ref'],
+          required: ['_id', 'ref'],
           additionalProperties: false
         },
         additionalItems: false,
