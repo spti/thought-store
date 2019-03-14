@@ -57,18 +57,21 @@ function setDepth(tree) {
   return doSetDepth(tree, -1)
 }
 
-function saveDeepest(node) {
+function doSaveDeepest(node, depths) {
 
-  const depths = node.children.map((child) => {
-    return node.depth
-  })
+  console.log('doSaveDeepest', depths);
+  const deepest = Math.max(...depths)
+  if (deepest == 0) {
+    return node
+  }
 
-  var deepestIndex = depths.indexOf(Math.max(depths))
+  const deepestIndex = depths.indexOf(deepest)
 
   // this only saves the terminal node of the deepest path
-  saveDeepest(node.children[deepestIndex])
+  doSaveDeepestOne(node.children[deepestIndex])
   depths[deepestIndex]--
 
+  return doSaveDeepest(node, depths)
   // var i = 0; const len = node.children.length;
   // for (i; i < len; i++) {
   //
@@ -76,6 +79,37 @@ function saveDeepest(node) {
 
 }
 
+function doSaveDeepestOne(node) {
+  if (node.saved) return node
+
+  console.log('doSaveDeepestOne', node);
+
+  if (!node.children || node.children.length == 0) {
+    node.saved = true
+    return node
+  }
+
+  const depths = node.children.map((child) => {
+    return child.depth
+  })
+
+  const deepestIndex = depths.indexOf(Math.max(...depths))
+
+  // this only saves the terminal node of the deepest path
+  doSaveDeepestOne(node.children[deepestIndex])
+  node.depth--
+
+  return node
+}
+
+function saveDeepest(node) {
+  const depths = node.children.map((child) => {
+    return child.depth
+  })
+
+  return doSaveDeepest(node, depths)
+}
+
 module.exports = {
-  setDepth,
+  setDepth, saveDeepest
 }
