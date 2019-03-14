@@ -61,16 +61,17 @@ function doSaveDeepest(node, depths) {
 
   console.log('doSaveDeepest', depths);
   const deepest = Math.max(...depths)
-  if (deepest == 0) {
+  if (deepest == -1) {
     return node
   }
 
   const deepestIndex = depths.indexOf(deepest)
 
   // this only saves the terminal node of the deepest path
-  doSaveDeepestOne(node.children[deepestIndex])
+  var deepestSaved = doSaveDeepestOne(node.children[deepestIndex])
   depths[deepestIndex]--
 
+  console.log('doSaveDeepest, didSaveDeepestOne, node', JSON.parse(JSON.stringify(deepestSaved)));
   return doSaveDeepest(node, depths)
   // var i = 0; const len = node.children.length;
   // for (i; i < len; i++) {
@@ -79,24 +80,57 @@ function doSaveDeepest(node, depths) {
 
 }
 
+// function doSaveDeepestOne(node, depths, branchIndex) {
 function doSaveDeepestOne(node) {
   if (node.saved) return node
 
-  console.log('doSaveDeepestOne', node);
+  // console.log('doSaveDeepestOne', node);
 
+  // if (!node.children || node.children.length == 0) {
   if (!node.children || node.children.length == 0) {
+    console.log('doSaveDeepestOne, terminal node, saved', JSON.parse(JSON.stringify(node)));
     node.saved = true
     return node
   }
 
-  const depths = node.children.map((child) => {
-    return child.depth
-  })
+  // map children's lengths to an array, except those children that are already saved
+  var depths = []
+  var unsavedChildren = []
+  var i = 0; const len = node.children.length;
+  for (i; i < len; i++) {
+    if (node.children[i].saved) continue
+    depths.push(node.children[i].depth)
+    unsavedChildren.push(node.children[i])
+  }
 
-  const deepestIndex = depths.indexOf(Math.max(...depths))
+  // the node can be saved only and only if all it's descendants
+  // are saved (all it's children and all their children and so on)
+  if (depths.length == 0) {
+    console.log('doSaveDeepestOne, descendants saved, saving.', JSON.parse(JSON.stringify(node)));
+    node.saved = true
+    return node
+  }
+
+  const deepest = Math.max(...depths)
+  var deepestIndex = depths.indexOf(deepest)
 
   // this only saves the terminal node of the deepest path
-  doSaveDeepestOne(node.children[deepestIndex])
+  doSaveDeepestOne(unsavedChildren[deepestIndex])
+
+  depths = depths.slice(deepestIndex+1)
+  unsavedChildren = unsavedChildren.slice(deepestIndex+1)
+
+  // deepestIndex = null
+  if (depths.length == 0) return node
+
+  while ((deepestIndex = depths.indexOf(deepest)) > -1) {
+    // console.log('doSaveDeepestOne, while loop, deepestIndex:', deepestIndex);
+    doSaveDeepestOne(unsavedChildren[deepestIndex])
+    depths = depths.slice(deepestIndex+1)
+    unsavedChildren = unsavedChildren.slice(deepestIndex+1)
+  }
+
+
   node.depth--
 
   return node
