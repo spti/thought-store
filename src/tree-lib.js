@@ -69,6 +69,7 @@ function doSaveDeepest(node, depths) {
 
   // this only saves the terminal node of the deepest path
   var deepestSaved = doSaveDeepestOne(node.children[deepestIndex])
+  node.children[deepestIndex] = deepestSaved
   depths[deepestIndex]--
 
   console.log('doSaveDeepest, didSaveDeepestOne, node', JSON.parse(JSON.stringify(deepestSaved)));
@@ -95,19 +96,20 @@ function doSaveDeepestOne(node) {
 
   // map children's lengths to an array, except those children that are already saved
   var depths = []
-  var unsavedChildren = []
+  var unsavedIndexes = []
   var i = 0; const len = node.children.length;
   for (i; i < len; i++) {
     if (node.children[i].saved) continue
     depths.push(node.children[i].depth)
-    unsavedChildren.push(node.children[i])
+    unsavedIndexes.push(i)
   }
 
   // the node can be saved only and only if all it's descendants
   // are saved (all it's children and all their children and so on)
   if (depths.length == 0) {
-    console.log('doSaveDeepestOne, descendants saved, saving.', JSON.parse(JSON.stringify(node)));
+    node.depth--
     node.saved = true
+    console.log('doSaveDeepestOne, descendants saved, saving.', JSON.parse(JSON.stringify(node)));
     return node
   }
 
@@ -115,24 +117,36 @@ function doSaveDeepestOne(node) {
   var deepestIndex = depths.indexOf(deepest)
 
   // this only saves the terminal node of the deepest path
-  doSaveDeepestOne(unsavedChildren[deepestIndex])
+  node.children[(unsavedIndexes[deepestIndex])] = doSaveDeepestOne(node.children[(unsavedIndexes[deepestIndex])])
 
+  // The node may contain more than one child with the same depth.
+  // If the depth we're looking for is the max depth for this node,
+  // then we want to save the terminal node of each of the children
+  // with such depth.
+
+  // indexOf returns the index of the first occurence of given value.
+  // if theres more than one occurence, to find it we have to remove the part of
+  // the array, that we already examined, and then run the indeOf again,
+  // on the remainder
   depths = depths.slice(deepestIndex+1)
-  unsavedChildren = unsavedChildren.slice(deepestIndex+1)
+  unsavedIndexes = unsavedIndexes.slice(deepestIndex+1)
 
   // deepestIndex = null
-  if (depths.length == 0) return node
+  if (depths.length == 0) {
+    node.depth--
+    return node
+  }
 
   while ((deepestIndex = depths.indexOf(deepest)) > -1) {
     // console.log('doSaveDeepestOne, while loop, deepestIndex:', deepestIndex);
-    doSaveDeepestOne(unsavedChildren[deepestIndex])
+    node.children[(unsavedIndexes[deepestIndex])] = doSaveDeepestOne(node.children[(unsavedIndexes[deepestIndex])])
     depths = depths.slice(deepestIndex+1)
-    unsavedChildren = unsavedChildren.slice(deepestIndex+1)
+    unsavedIndexes = unsavedIndexes.slice(deepestIndex+1)
   }
 
 
   node.depth--
-
+  console.log('deepestOne, depth--', node.depth);
   return node
 }
 
