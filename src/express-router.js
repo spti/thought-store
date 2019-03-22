@@ -3,6 +3,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const bodyParserJson = bodyParser.json({type: 'application/json'})
 
+const treelib = require('./save-tree.js')
 /*
 const multer = require('multer')
 const storage = multer.diskStorage({
@@ -24,6 +25,7 @@ const static = express.static(path.join(__dirname, '../../thought-store_frontend
 router.post('/', bodyParserJson, (req, res) => {
   console.log('post, /, body:', req.body);
 
+  treelib.saveDeepest(req.body.tree, req.body.maps)
   res.status(200)
   res.set('Content-Type', 'text/plain')
   res.send('got the json')
