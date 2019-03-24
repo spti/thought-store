@@ -1,4 +1,31 @@
 
+function traverseAsync(save, node) {
+
+  function doRecurseAsync(children) {
+    return doTraverseAsync(children.shift())
+    .then(() => {
+      if (children.length == 0) {
+        return
+      }
+
+      return doRecurseAsync(children)
+    })
+  }
+
+  function doTraverseAsync(node) {
+    if (!node.children || node.children.length == 0) {
+      return save(node)
+    }
+
+    return doRecurseAsync(node.children)
+    .then(() => {
+      return save(node)
+    })
+  }
+
+  return doTraverseAsync(node)
+}
+
 function doSaveDeepest(node, depths, maps) {
 
   console.log('doSaveDeepest', depths);
