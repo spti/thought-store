@@ -90,6 +90,10 @@ class TryThings {
     })
   }
 
+  setTree(tree) {
+    this.tree = tree
+  }
+
   createDocWithRef() {
     return this.one.insertOne({a: 'referee'})
     .then((result) => {

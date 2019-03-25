@@ -1,5 +1,6 @@
 const express = require('express')
 const router = require('./express-router.js')
+const saver = require('./save-tree-to-db.js')
 
 console.log(router)
 class ExpressServer {
@@ -7,6 +8,8 @@ class ExpressServer {
     this.options = options || {}
     this.devEnv = options.devEnv || false
     this.logs = []
+
+    this.saver = saver
 
     // this.routerFactory = routerFactory
     this.init()
@@ -22,7 +25,13 @@ class ExpressServer {
   init() {
     // console.log(router)
     const server = express()
-    const router = this.options.routerFactory.makeTheRouter(this.log.bind(this))
+    const router = this.options.routerFactory.makeTheRouter(
+      saver,
+      {
+        onRequest: (tree) => {this.saver.setTree(tree)},
+        log: this.log.bind(this)
+      }
+    )
     server.use('/', router)
 
     server.listen('3000')

@@ -18,14 +18,18 @@ const storage = multer.diskStorage({
 const upload = multer({storage: storage})
 */
 
-function makeTheRouter(log) {
+function makeTheRouter(saver, options) {
+  options = options || {log: () => {}}
+
   const router = express.Router()
   const static = express.static(path.join(__dirname, '../../thought-store_frontend/dist/'))
 
   router.post('/', bodyParserJson, (req, res) => {
     console.log('post, /, body:', req.body);
-    log(req.body)
-    treelib.saveDeepest(req.body.tree, req.body.maps)
+    options.log(req.body)
+
+    if (options.onRequest) options.onRequest(req.body)
+    // treelib.saveDeepest(req.body.tree, req.body.maps)
     res.status(200)
     res.set('Content-Type', 'text/plain')
     res.send('got the json')
