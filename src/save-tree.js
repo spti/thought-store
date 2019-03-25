@@ -1,14 +1,16 @@
 
-function traverseAsync(save, node) {
+function traverseAsync(node, save) {
 
-  function doRecurseAsync(children) {
-    return doTraverseAsync(children.shift())
-    .then(() => {
-      if (children.length == 0) {
-        return
+  function doTraverseChildrenAsync(childrenToSave, childrenSaved) {
+    return doTraverseAsync(childrenToSave.shift())
+    .then((savedChild) => {
+      childrenSaved.unshift(savedChild)
+
+      if (childrenToSave.length == 0) {
+        return childrenSaved
       }
 
-      return doRecurseAsync(children)
+      return doTraverseChildrenAsync(childrenToSave, childrenSaved)
     })
   }
 
@@ -17,8 +19,9 @@ function traverseAsync(save, node) {
       return save(node)
     }
 
-    return doRecurseAsync(node.children)
-    .then(() => {
+    return doTraverseChildrenAsync([].concat(node.children), [])
+    .then((savedChildren) => {
+      node.children = savedChildren
       return save(node)
     })
   }
@@ -144,4 +147,4 @@ function saveDeepest(tree, maps) {
   return doSaveDeepest(tree, depths, maps)
 }
 
-module.exports = {saveDeepest}
+module.exports = {saveDeepest, traverseAsync}
