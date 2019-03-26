@@ -82,8 +82,9 @@ class TryThings {
 
   saveTree(tree) {
     return lib.traverseAsync(tree || this.trees.tree0, this.saveOne.bind(this))
-    .then((result) => {
-      this.log('saved tree,', result)
+    .then((savedTree) => {
+      this.tree = savedTree
+      this.log('saved tree,', savedTree)
     })
     .catch((err) => {
       this.log('save tree failed', err)
