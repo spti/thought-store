@@ -83,7 +83,7 @@ class TryThings {
 
 
   saveTree(tree) {
-    return lib.traverseAsync(tree || this.trees.tree0dbsDense, this.saveOne.bind(this))
+    return lib.traverseAsync(tree || this.trees.tree0dbsDeepDense, this.saveOne.bind(this))
     .then((savedTree) => {
       this.tree = savedTree
       this.log('saved tree,', savedTree)
@@ -103,7 +103,8 @@ class TryThings {
         connectFromField: 'children.to',
         startWith: '$children.to',
         connectToField: '_id',
-        as: 'referee'
+        as: 'nodes',
+        depthField: 'depth'
       }}
     ])
     .toArray()
@@ -120,8 +121,64 @@ class TryThings {
     })
   }
 
-  buildTree() {
-    
+  // doBuildTree(node, nodes, nodesIds) {
+  //
+  //   var i = 0; const len = node.children.length
+  //   for (i; i < len; i++) {
+  //     const child = nodes[i].children[i]
+  //     // this.log('ii loop, child', child)
+  //     var childIndex = nodesIds.indexOf(child.to.toHexString())
+  //
+  //     if (childIndex == -1) throw new Error('node missing in aggregation results')
+  //
+  //     child.doc = nodes.splice(childIndex, 1)[0]
+  //     ids.splice(childIndex, 1)
+  //
+  //     if (childIndex < i) i--
+  //   }
+  // }
+
+  buildTree(nodes) {
+    const ids = nodes.map((node) => {return node._id.toHexString()})
+    this.log('buildTree, nodes', nodes)
+    this.log('buildTree, nodes ids', ids)
+
+    var i = nodes.length-1
+    for (i; i > -1; i--) {
+      if (!nodes[i].children) {
+        continue
+      }
+
+      this.log('i loop, children containing node', nodes[i])
+
+      var ii = 0; const len = nodes[i].children.length
+      for (ii; ii < len; ii++) {
+        const child = nodes[i].children[ii]
+        this.log('ii loop, child', child)
+        var childIndex = ids.indexOf(child.to.toHexString())
+
+        if (childIndex == -1) throw new Error('node missing in aggregation results')
+
+        child.doc = nodes.splice(childIndex, 1)[0]
+        ids.splice(childIndex, 1)
+
+        if (childIndex < i) i--
+      }
+
+
+    }
+
+    this.log('buildTree finished, nodes', nodes)
+    return nodes[0]
+  }
+
+  queryAndBuild() {
+    return this.doQueryTree()
+    .then((docs) => {
+      // this.log("doQueryTree result", docs[0])
+
+      return this.buildTree(docs[0].nodes)
+    })
   }
 
   setTree(tree) {
