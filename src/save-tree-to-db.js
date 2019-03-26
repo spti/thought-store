@@ -65,23 +65,25 @@ class TryThings {
     if (node.children && node.children.length > 0) {
       doc.children = node.children.map((child) => {
         this.log("saveOne, node's child", child)
-        return {coll: "one", to: child.savedId, terminal: child.terminalRef}
+        return {coll: child.coll, to: child.savedId, terminal: child.terminalRef}
       })
     }
 
     doc.name = node.name
     this.log('saveOne, the new doc:', doc)
-    return this.one.insertOne(doc)
+
+    return this[node.coll].insertOne(doc)
     .then((result) => {
       doc.savedId = result.insertedId
       node = doc
       return node
     })
+
   }
 
 
   saveTree(tree) {
-    return lib.traverseAsync(tree || this.trees.tree0, this.saveOne.bind(this))
+    return lib.traverseAsync(tree || this.trees.tree0dbsDense, this.saveOne.bind(this))
     .then((savedTree) => {
       this.tree = savedTree
       this.log('saved tree,', savedTree)
@@ -89,6 +91,37 @@ class TryThings {
     .catch((err) => {
       this.log('save tree failed', err)
     })
+  }
+
+  doQueryTree(root) {
+    return this.one.aggregate([
+      {$match: {
+        _id: this.tree._id
+      }},
+      {$graphLookup: {
+        from: 'one',
+        connectFromField: 'children.to',
+        startWith: '$children.to',
+        connectToField: '_id',
+        as: 'referee'
+      }}
+    ])
+    .toArray()
+
+  }
+
+  queryTree() {
+    this.doQueryTree()
+    .then((docs) => {
+      this.log('queriedTree, docs', docs)
+    })
+    .catch((err) => {
+      this.log('queryTree rejected,', err)
+    })
+  }
+
+  buildTree() {
+    
   }
 
   setTree(tree) {
