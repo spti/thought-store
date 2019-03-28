@@ -121,23 +121,80 @@ class TryThings {
     })
   }
 
-  // doBuildTree(node, nodes, nodesIds) {
-  //
-  //   var i = 0; const len = node.children.length
-  //   for (i; i < len; i++) {
-  //     const child = nodes[i].children[i]
-  //     // this.log('ii loop, child', child)
-  //     var childIndex = nodesIds.indexOf(child.to.toHexString())
-  //
-  //     if (childIndex == -1) throw new Error('node missing in aggregation results')
-  //
-  //     child.doc = nodes.splice(childIndex, 1)[0]
-  //     ids.splice(childIndex, 1)
-  //
-  //     if (childIndex < i) i--
-  //   }
-  // }
+  doBuildTree(node, nodes) {
+    this.log('doBuildTree, node', node.name)
 
+    if (!node.children || node.children.length == 0) {
+
+      return {node, nodes}
+    }
+
+    var i = 0; const len = node.children.length
+    for (i; i < len; i++) {
+      const child = node.children[i]
+      // this.log('ii loop, child', child)
+      var childIndex = nodes.ids.indexOf(child.to.toHexString())
+
+      if (childIndex == -1) throw new Error('node missing in aggregation results')
+
+      child.doc = nodes.nodes.splice(childIndex, 1)[0]
+      // this.log('doBuildTree, child', child.doc.name)
+
+      nodes.depths.splice(childIndex, 1)
+      nodes.ids.splice(childIndex, 1)
+
+      nodes = this.doBuildTree(child.doc, nodes).nodes
+      // if (childIndex < i) i--
+    }
+
+    return {node, nodes}
+  }
+
+  doBuildTrees(nodes, children) {
+    var i = nodes.depths.indexOf(0)
+
+    if (i < 0) {
+      if (nodes.nodes.length > 0) {
+        throw new Error('no top level nodes left, yet the nodes array is not empty')
+      }
+
+      return children
+    }
+
+    nodes.ids.splice(i, 1)
+    nodes.depths.splice(i, 1)
+    const node = nodes.nodes.splice(i, 1)[0]
+
+    const builtTree = this.doBuildTree(node, nodes)
+
+    this.log('buildTree finished, nodes', nodes)
+    children.push(builtTree.node)
+
+    return this.doBuildTrees(builtTree.nodes, children)
+    // return nodes[0]
+  }
+
+  buildTrees(root, nodes) {
+    const ids = nodes.map((node) => {return node._id.toHexString()})
+    const depths = nodes.map((node) => {
+      return node.depth
+    })
+
+    const children = this.doBuildTrees({nodes, ids, depths}, [])
+
+    root.children.forEach((child) => {
+      const i = children.map(child => child._id.toHexString())
+        .indexOf(child.to.toHexString())
+
+      if (i < 0) throw new Error('node missing in aggregation results')
+
+      child.doc = children.splice(i, 1)[0]
+    })
+
+    return root
+  }
+
+  /*
   buildTree(nodes) {
     const ids = nodes.map((node) => {return node._id.toHexString()})
     this.log('buildTree, nodes', nodes)
@@ -171,13 +228,15 @@ class TryThings {
     this.log('buildTree finished, nodes', nodes)
     return nodes[0]
   }
+  */
+
 
   queryAndBuild() {
     return this.doQueryTree()
     .then((docs) => {
       // this.log("doQueryTree result", docs[0])
 
-      return this.buildTree(docs[0].nodes)
+      return this.buildTrees(docs[0], docs[0].nodes)
     })
   }
 
