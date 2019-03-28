@@ -93,10 +93,10 @@ class TryThings {
     })
   }
 
-  doQueryTree(root) {
+  doQueryTree(nodeId) {
     return this.one.aggregate([
       {$match: {
-        _id: this.tree._id
+        _id: nodeId
       }},
       {$graphLookup: {
         from: 'one',
@@ -111,14 +111,27 @@ class TryThings {
 
   }
 
-  queryTree() {
-    this.doQueryTree()
-    .then((docs) => {
-      this.log('queriedTree, docs', docs)
-    })
-    .catch((err) => {
-      this.log('queryTree rejected,', err)
-    })
+  queryTree(nodeName) {
+    if (!nodeName) {
+      this.doQueryTree(this.tree._id)
+      .then((docs) => {
+        this.log('queriedTree, docs', docs)
+      })
+      .catch((err) => {
+        this.log('queryTree rejected,', err)
+      })
+    } else {
+      this.one.findOne({name: nodeName})
+      .then((result) => {
+        return this.doQueryTree(result._id)
+      })
+      .then((docs) => {
+        this.log('queriedTree, docs', docs)
+      })
+      .catch((err) => {
+        this.log('queryTree rejected,', err)
+      })
+    }
   }
 
   doBuildTree(node, nodes) {
@@ -194,50 +207,27 @@ class TryThings {
     return root
   }
 
-  /*
-  buildTree(nodes) {
-    const ids = nodes.map((node) => {return node._id.toHexString()})
-    this.log('buildTree, nodes', nodes)
-    this.log('buildTree, nodes ids', ids)
+  queryAndBuild(nodeName) {
+    if (!nodeName) {
+      
+      return this.doQueryTree(this.tree._id)
+      .then((docs) => {
+        // this.log("doQueryTree result", docs[0])
 
-    var i = nodes.length-1
-    for (i; i > -1; i--) {
-      if (!nodes[i].children) {
-        continue
-      }
+        return this.buildTrees(docs[0], docs[0].nodes)
+      })
+    } else {
 
-      this.log('i loop, children containing node', nodes[i])
+      return this.one.findOne({name: nodeName})
+      .then((result) => {
+        return this.doQueryTree(result._id)
+        .then((docs) => {
+          // this.log("doQueryTree result", docs[0])
 
-      var ii = 0; const len = nodes[i].children.length
-      for (ii; ii < len; ii++) {
-        const child = nodes[i].children[ii]
-        this.log('ii loop, child', child)
-        var childIndex = ids.indexOf(child.to.toHexString())
-
-        if (childIndex == -1) throw new Error('node missing in aggregation results')
-
-        child.doc = nodes.splice(childIndex, 1)[0]
-        ids.splice(childIndex, 1)
-
-        if (childIndex < i) i--
-      }
-
-
+          return this.buildTrees(docs[0], docs[0].nodes)
+        })
+      })
     }
-
-    this.log('buildTree finished, nodes', nodes)
-    return nodes[0]
-  }
-  */
-
-
-  queryAndBuild() {
-    return this.doQueryTree()
-    .then((docs) => {
-      // this.log("doQueryTree result", docs[0])
-
-      return this.buildTrees(docs[0], docs[0].nodes)
-    })
   }
 
   setTree(tree) {
