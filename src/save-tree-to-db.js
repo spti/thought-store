@@ -4,6 +4,7 @@ const DBRef = require('mongodb').DBRef
 // const schemas = require('./schema.js')
 const lib = require('./save-tree.js')
 const trees = require('./fake-trees.js')
+// const models = require('./models.js')
 
 class TryThings {
   constructor(url, dbName, options) {
@@ -63,15 +64,48 @@ class TryThings {
   }
 
   saveOne(node) {
-    this.log('saveOne, node', node.name);
+    this.log('saveOne, node', node.type);
     const doc = {}
 
-    if (node.children && node.children.length > 0) {
-      doc.children = node.children.map((child) => {
-        this.log("saveOne, node's child", child)
-        return {coll: child.coll, to: child.savedId, terminal: child.terminalRef}
+    if (node.type == 'text') {
+
+      doc.text = node.value
+      return this.resources.insertOne({doc})
+      .then((docSaved) => {
+        if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
+        node.doc = docSaved
+        return node
       })
+    } else if (node.type == 'entity') {
+      if (node.children && node.children.length > 0) {
+        doc.refs = node.children.map((child) => {
+          this.log("saveOne, node's child", child)
+
+          const coll =
+            (child.type == 'entity') ? 'entities'
+            : (child.type == 'text') ? 'resources'
+            : null
+
+          if (!coll) {Promise.reject(new Error('cant determine the collection to which a child belongs'))}
+
+          return {
+            coll: coll,
+            to: child.doc._id,
+            terminal: child.terminal || false
+          }
+        })
+
+        return this.entities.insertOne({doc})
+        .then((docSaved) => {
+          if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
+          node.doc = docSaved
+          return node
+        })
+      }
     }
+
+
+
 
     doc.name = node.name
     doc.coll = node.coll
@@ -79,8 +113,10 @@ class TryThings {
 
     return this[node.coll].insertOne(doc)
     .then((result) => {
-      doc.savedId = result.insertedId
-      node = doc
+      // doc.savedId = result.insertedId
+
+      if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
+      node.doc = result.ops[0]
       return node
     })
 
