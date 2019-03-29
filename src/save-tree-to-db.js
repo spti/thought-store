@@ -40,13 +40,17 @@ class TryThings {
   }
 
   createCollection(db) {
-    return db.createCollection("one")
+    return db.createCollection("entities")
     .then((coll) => {
-      this.one = coll
-      return db.createCollection("two")
+      this.entities = coll
+      return db.createCollection("resources")
     })
     .then((coll) => {
-      this.two = coll
+      this.resources = coll
+      return db.createCollection("views")
+    })
+    .then((coll) => {
+      this.views = coll
       return coll
     })
     // .then((collection) => {
@@ -70,6 +74,7 @@ class TryThings {
     }
 
     doc.name = node.name
+    doc.coll = node.coll
     this.log('saveOne, the new doc:', doc)
 
     return this[node.coll].insertOne(doc)
@@ -83,7 +88,7 @@ class TryThings {
 
 
   saveTree(tree) {
-    return lib.traverseAsync(tree || this.trees.tree0dbsDeepDense, this.saveOne.bind(this))
+    return lib.traverseAsync(tree || this.trees.tree0dbsSparse, this.saveOne.bind(this))
     .then((savedTree) => {
       this.tree = savedTree
       this.log('saved tree,', savedTree)
@@ -94,18 +99,38 @@ class TryThings {
   }
 
   doQueryTree(nodeId) {
-    return this.one.aggregate([
+    return this.entities.aggregate([
       {$match: {
         _id: nodeId
       }},
       {$graphLookup: {
-        from: 'one',
+        from: 'entities',
         connectFromField: 'children.to',
         startWith: '$children.to',
         connectToField: '_id',
-        as: 'nodes',
+        as: 'entities',
         depthField: 'depth'
-      }}
+      }},
+      {$unwind: '$entities'},
+      {$project: {
+        child: '$entities'
+      }},
+      {$graphLookup: {
+        from: 'resources',
+        connectFromField: 'child.children.to',
+        startWith: '$child.children.to',
+        connectToField: '_id',
+        as: 'resources',
+        depthField: 'depth'
+      }},
+      {$graphLookup: {
+        from: 'views',
+        connectFromField: 'child.children.to',
+        startWith: '$child.children.to',
+        connectToField: '_id',
+        as: 'views',
+        depthField: 'depth'
+      }},
     ])
     .toArray()
 
@@ -209,7 +234,7 @@ class TryThings {
 
   queryAndBuild(nodeName) {
     if (!nodeName) {
-      
+
       return this.doQueryTree(this.tree._id)
       .then((docs) => {
         // this.log("doQueryTree result", docs[0])
