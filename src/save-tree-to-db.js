@@ -106,22 +106,6 @@ class TryThings {
       }
     }
 
-
-
-
-    doc.name = node.name
-    doc.coll = node.coll
-    this.log('saveOne, the new doc:', doc)
-
-    return this[node.coll].insertOne(doc)
-    .then((result) => {
-      // doc.savedId = result.insertedId
-
-      if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
-      node.doc = result.ops[0]
-      return node
-    })
-
   }
 
 

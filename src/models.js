@@ -85,8 +85,9 @@ const entities = {
             // ref to resources, or entities
             coll: { bsonType: "string", /*enum: ['resources', 'entities']*/ },
             to: { bsonType: "objectId" },
+            terminal: { bsonType: "boolean" },
           },
-          required: ['_id', 'coll', 'to'],
+          required: ['_id', 'coll', 'to', 'terminal'],
           additionalProperties: false
         },
         additionalItems: false,
