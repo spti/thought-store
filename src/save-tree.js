@@ -71,12 +71,12 @@ function saveDeepestAsync(tree, maps, save) {
     const deepestIndex = depths.indexOf(deepest)
 
     // this only saves the terminal node of the deepest path
-    return doSaveDeepestOne(node.children[deepestIndex], maps)
+    return doSaveOne(node.children[deepestIndex], maps)
     .then((deepestSaved) => {
       node.children[deepestIndex] = deepestSaved
       depths[deepestIndex]--
 
-      console.log('doSaveDeepest, didSaveDeepestOne, node', JSON.parse(JSON.stringify(deepestSaved)));
+      // console.log('doSaveDeepest, didSaveDeepestOne, node', JSON.parse(JSON.stringify(deepestSaved)));
       return doSave(node, depths, maps)
     })
 
@@ -111,7 +111,7 @@ function saveDeepestAsync(tree, maps, save) {
 
     // if (!node.children || node.children.length == 0) {
     if (!node.children || node.children.length == 0) {
-      console.log('doSaveDeepestOne, terminal node, saved', JSON.parse(JSON.stringify(node)));
+      // console.log('doSaveDeepestOne, terminal node, saved', JSON.parse(JSON.stringify(node)));
 
       node.visited = true
       return save(node)
@@ -209,7 +209,10 @@ function saveDeepestAsync(tree, maps, save) {
     return child.depth
   })
 
-  return doSave(node, depths)
+  return doSave(tree, depths)
+  .then(() => {
+    return save(tree)
+  })
 }
 
 function doSaveDeepest(node, depths, maps) {
@@ -330,4 +333,4 @@ function saveDeepest(tree, maps) {
   return doSaveDeepest(tree, depths, maps)
 }
 
-module.exports = {saveDeepest, traverseAsync}
+module.exports = {saveDeepest, saveDeepestAsync, traverseAsync}

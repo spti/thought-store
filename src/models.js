@@ -83,19 +83,18 @@ const entities = {
           properties: {
             _id: {bsonType: "objectId"},
             // ref to resources, or entities
-            ref: { bsonType: "objectId" },
-            // ref to labels, or entities
-            label: { bsonType: "objectId" }
+            coll: { bsonType: "string", /*enum: ['resources', 'entities']*/ },
+            to: { bsonType: "objectId" },
           },
-          required: ['_id', 'ref'],
+          required: ['_id', 'coll', 'to'],
           additionalProperties: false
         },
         additionalItems: false,
         minItems: 1
       },
-      view: {
-        bsonType: "objectId"
-      }
+      // view: {
+      //   bsonType: "objectId"
+      // }
     },
     required: ['_id', 'refs'],
     additionalProperties: false

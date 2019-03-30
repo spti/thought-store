@@ -1,10 +1,10 @@
 const MongoClient = require('mongodb').MongoClient
 const DBRef = require('mongodb').DBRef
-// const ObjectId = require('mongodb').ObjectID
+const ObjectId = require('mongodb').ObjectID
 // const schemas = require('./schema.js')
 const lib = require('./save-tree.js')
 const trees = require('./fake-trees.js')
-// const models = require('./models.js')
+const models = require('./models.js')
 
 class TryThings {
   constructor(url, dbName, options) {
@@ -41,18 +41,14 @@ class TryThings {
   }
 
   createCollection(db) {
-    return db.createCollection("entities")
+    return models.entities.create.call(models.entities, db)
     .then((coll) => {
       this.entities = coll
-      return db.createCollection("resources")
+      return models.resources.create.call(models.resources, db)
     })
     .then((coll) => {
       this.resources = coll
-      return db.createCollection("views")
-    })
-    .then((coll) => {
-      this.views = coll
-      return coll
+      return
     })
     // .then((collection) => {
     //   return collection.createIndex({text: "text"})
@@ -64,16 +60,19 @@ class TryThings {
   }
 
   saveOne(node) {
-    this.log('saveOne, node', node.type);
+    this.log('saveOne, node', node);
     const doc = {}
 
     if (node.type == 'text') {
 
       doc.text = node.value
-      return this.resources.insertOne({doc})
-      .then((docSaved) => {
+      doc._id = new ObjectId()
+      this.log('saveOne, doc', doc);
+      return this.resources.insertOne(doc)
+      .then((result) => {
+        this.log('saveOne, saved the doc', result)
         if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
-        node.doc = docSaved
+        node.doc = result.ops[0]
         return node
       })
     } else if (node.type == 'entity') {
@@ -95,10 +94,13 @@ class TryThings {
           }
         })
 
-        return this.entities.insertOne({doc})
-        .then((docSaved) => {
+        doc._id = new ObjectId()
+        this.log('saveOne, entity to save', doc)
+        return this.entities.insertOne(doc)
+        .then((result) => {
+          this.log('saveOne, saved entity', result)
           if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
-          node.doc = docSaved
+          node.doc = result.ops[0]
           return node
         })
       }
@@ -123,8 +125,18 @@ class TryThings {
   }
 
 
-  saveTree(tree) {
-    return lib.traverseAsync(tree || this.trees.tree0dbsSparse, this.saveOne.bind(this))
+  // saveEntity() {
+  //   const entity = {
+  //     refs: [
+  //       {},
+  //       {},
+  //       {},
+  //     ]
+  //   }
+  // }
+
+  saveTree(tree, maps) {
+    return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, maps, this.saveOne.bind(this))
     .then((savedTree) => {
       this.tree = savedTree
       this.log('saved tree,', savedTree)
@@ -159,14 +171,14 @@ class TryThings {
         as: 'resources',
         depthField: 'depth'
       }},
-      {$graphLookup: {
-        from: 'views',
-        connectFromField: 'child.children.to',
-        startWith: '$child.children.to',
-        connectToField: '_id',
-        as: 'views',
-        depthField: 'depth'
-      }},
+      // {$graphLookup: {
+      //   from: 'views',
+      //   connectFromField: 'child.children.to',
+      //   startWith: '$child.children.to',
+      //   connectToField: '_id',
+      //   as: 'views',
+      //   depthField: 'depth'
+      // }},
     ])
     .toArray()
 

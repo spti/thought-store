@@ -28,7 +28,9 @@ class ExpressServer {
     const router = this.options.routerFactory.makeTheRouter(
       saver,
       {
-        onRequest: (tree) => {this.saver.setTree(tree)},
+        onRequest: (data) => {
+          this.saver.saveTree(data.tree, data.maps)
+        },
         log: this.log.bind(this)
       }
     )
