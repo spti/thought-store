@@ -36,18 +36,21 @@ class TryThings {
         return Promise.reject(err)
       }
 
+      this.entities = new models.Entities(this.db)
+      this.resources = new models.Resources(this.db)
+
       return this.createCollection(this.db)
     })
   }
 
   createCollection(db) {
-    return models.entities.create.call(models.entities, db)
-    .then((coll) => {
-      this.entities = coll
-      return models.resources.create.call(models.resources, db)
+    return this.entities.create()
+    .then((model) => {
+      // this.entities = model
+      return this.resources.create()
     })
-    .then((coll) => {
-      this.resources = coll
+    .then((model) => {
+      // this.resources = model
       return
     })
     // .then((collection) => {
@@ -61,14 +64,11 @@ class TryThings {
 
   saveOne(node) {
     this.log('saveOne, node', node);
-    const doc = {}
+    // const doc = {}
 
     if (node.type == 'text') {
 
-      doc.text = node.value
-      doc._id = new ObjectId()
-      this.log('saveOne, doc', doc);
-      return this.resources.insertOne(doc)
+      return this.resources.saveOneText(node.value)
       .then((result) => {
         this.log('saveOne, saved the doc', result)
         if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
@@ -77,7 +77,7 @@ class TryThings {
       })
     } else if (node.type == 'entity') {
       if (node.children && node.children.length > 0) {
-        doc.refs = node.children.map((child) => {
+        const refs = node.children.map((child) => {
           this.log("saveOne, node's child", child)
 
           const coll =
@@ -87,16 +87,11 @@ class TryThings {
 
           if (!coll) {Promise.reject(new Error('cant determine the collection to which a child belongs'))}
 
-          return {
-            coll: coll,
-            to: child.doc._id,
-            terminal: child.terminal || false
-          }
+          return this.entities.createRef(child.doc, coll, child.terminal)
         })
 
-        doc._id = new ObjectId()
-        this.log('saveOne, entity to save', doc)
-        return this.entities.insertOne(doc)
+        // this.log('saveOne, entity to save', doc)
+        return this.entities.saveOne(refs)
         .then((result) => {
           this.log('saveOne, saved entity', result)
           if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
