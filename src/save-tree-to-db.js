@@ -62,7 +62,7 @@ class TryThings {
     // })
   }
 
-  saveOne(node) {
+  saveOne(node, maps) {
     this.log('saveOne, node', node);
     // const doc = {}
 
@@ -78,16 +78,17 @@ class TryThings {
     } else if (node.type == 'entity') {
       if (node.children && node.children.length > 0) {
         const refs = node.children.map((child) => {
-          this.log("saveOne, node's child", child)
+          // this.log("saveOne, node's child", child)
 
           const coll =
-            (child.type == 'entity') ? 'entities'
+            (child.type == 'entity' || child.type == 'label') ? 'entities'
             : (child.type == 'text') ? 'resources'
             : null
 
           if (!coll) {Promise.reject(new Error('cant determine the collection to which a child belongs'))}
 
-          return this.entities.createRef(child.doc, coll, child.terminal)
+          const referee = (child.type == 'label') ? maps.ids[child.to].doc : child.doc
+          return this.entities.createRef(referee, coll, child.terminal)
         })
 
         // this.log('saveOne, entity to save', doc)

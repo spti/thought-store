@@ -25,8 +25,9 @@ function makeTheRouter(saver, options) {
   const static = express.static(path.join(__dirname, '../../thought-store_frontend/dist/'))
 
   router.post('/', bodyParserJson, (req, res) => {
-    console.log('post, /, body:', req.body);
-    options.log(req.body)
+    // console.log('post, /, body:', req.body);
+    options.log('post /, body', req.body)
+    req.body.tree.children.forEach((child) => {options.log('post /, body, child', child)})
 
     if (options.onRequest) options.onRequest(req.body)
     // treelib.saveDeepest(req.body.tree, req.body.maps)

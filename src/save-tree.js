@@ -91,11 +91,14 @@ function saveDeepestAsync(tree, maps, save) {
 
   function doSaveOne(node) {
     return new Promise((resolve, reject) => {
+      console.log('doSaveOne, NODE', node);
       if (node.visited) return resolve(node)
 
       // console.log('doSaveDeepestOne', node);
 
       if (node.type == 'label') {
+        console.log('node is a label, go is a DJ', node)
+        console.log('node is a label, go is a DJ', maps.ids[node.to])
         if (node.terminal) {
           node.visited = true
 
@@ -108,7 +111,15 @@ function saveDeepestAsync(tree, maps, save) {
           return resolve(node)
         }
 
-        return doSaveOne(maps.ids[node.to]).then((res) => {return resolve(res)})
+        if (maps.ids[node.to].visited) {
+          console.log('node is a label, the referee is already visited');
+          return resolve(node)
+        }
+
+        return doSaveOne(maps.ids[node.to]).then((nodeSaved) => {
+          maps.ids[node.to] = nodeSaved
+          return resolve(nodeSaved)
+        })
       }
 
       // if (!node.children || node.children.length == 0) {
@@ -117,7 +128,11 @@ function saveDeepestAsync(tree, maps, save) {
 
         console.log('doSaveOne, node has no children, saving')
         node.visited = true
-        return save(node).then((savedDoc) => {return resolve(savedDoc)})
+        return save(node, maps).then((nodeSaved) => {
+          console.log('doSaveOne, didSave node, the node: ', nodeSaved)
+          maps.ids[nodeSaved.id] = nodeSaved
+          return resolve(nodeSaved)
+        })
       }
 
       // map children's lengths to an array, except those children that are already saved
@@ -137,7 +152,10 @@ function saveDeepestAsync(tree, maps, save) {
 
         node.visited = true
         console.log('doSaveOne, descendants saved, saving')
-        return save(node).then((savedDoc) => {return resolve(savedDoc)})
+        return save(node, maps).then((nodeSaved) => {
+          maps.ids[nodeSaved.id] = nodeSaved
+          return resolve(nodeSaved)
+        })
         // console.log('doSaveDeepestOne, descendants saved, saving.', JSON.parse(JSON.stringify(node)));
         // return node
       }
@@ -148,6 +166,7 @@ function saveDeepestAsync(tree, maps, save) {
       // this only saves the terminal node of the deepest path
       return doSaveOne(node.children[(unsavedIndexes[deepestIndex])])
       .then((nodeSaved) => {
+        maps.ids[nodeSaved.id] = nodeSaved
         node.children[(unsavedIndexes[deepestIndex])] = nodeSaved
 
         // The node may contain more than one child with the same depth.
@@ -167,7 +186,11 @@ function saveDeepestAsync(tree, maps, save) {
           node.depth--
           node.visited = true
           console.log('doSaveOne, saved the descendants, so saving the node')
-          return save(node).then((res) => {return resolve(res)})
+          return save(node, maps).then((nodeSaved) => {
+            console.log('didSaveNode, nodeSaved', nodeSaved)
+            maps.ids[nodeSaved.id] = nodeSaved
+            return resolve(nodeSaved)
+          })
         }
 
         const nodesToSave = []
@@ -190,11 +213,13 @@ function saveDeepestAsync(tree, maps, save) {
         .then((nodesSaved) => {
           console.log('savedArray, resolving');
           nodesSaved.forEach((nodeSaved) => {
+            nodeSaved.visited = true
+            maps.ids[nodeSaved.id] = nodeSaved
             node.children[nodeSaved.index] = nodeSaved
           })
 
           node.depth--
-          // return save(node).then((res) => {return resolve(res)})
+          // return save(node, maps).then((res) => {return resolve(res)})
           return resolve(node)
         })
 
