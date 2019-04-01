@@ -103,17 +103,6 @@ class TryThings {
 
   }
 
-
-  // saveEntity() {
-  //   const entity = {
-  //     refs: [
-  //       {},
-  //       {},
-  //       {},
-  //     ]
-  //   }
-  // }
-
   saveTree(tree, maps) {
     return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, maps, this.saveOne.bind(this))
     .then((savedTree) => {
@@ -185,6 +174,41 @@ class TryThings {
       })
     }
   }
+
+  /*
+  doBuildMap(aggregatedNodes) {
+    const maps = {}
+
+    var i = 0; const len = aggregatedNodes.length
+    for (i; i < len; i++) {
+      const ref = aggregatedNodes[i].ref
+      const refId = ref._id.toHexString()
+
+      if (!maps[refId]) maps[refId] = ref
+
+      if (ref.resources.length > 0) {
+        for (var ii; ii < ref.resources.length; ii++) {
+          const resource = ref.resources[ii]
+          const resourceId = resource._id.toHexString()
+
+          if (!maps[resourceId]) maps[resourceId] = resource
+        }
+      }
+    }
+
+    this.log(maps)
+    return maps
+  }
+
+  doBuildTree(aggregatedNodes, maps, root) {
+    const entities = []
+    aggregatedNodes.forEach((node) => {
+      entities.push(node.ref)
+    })
+
+
+  }
+  */
 
   doBuildTree(node, nodes) {
     this.log('doBuildTree, node', node.name)
