@@ -60,10 +60,11 @@ class Resources {
   constructor(db) {
     this.schema = resourcesSchema
     this.db = db
+    this.name = "resources"
   }
 
   create() {
-    return this.db.createCollection("resources", {
+    return this.db.createCollection(this.name, {
       validator: {
         $jsonSchema: this.schema
       },
@@ -147,7 +148,7 @@ class Entities {
 
     return this.collection.insertOne({
       _id: new ObjectId(),
-      refs: refs
+      refs: refs,
     })
   }
 }

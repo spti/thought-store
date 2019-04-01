@@ -70,7 +70,7 @@ class TryThings {
 
       return this.resources.saveOneText(node.value)
       .then((result) => {
-        this.log('saveOne, saved the doc', result)
+        this.log('saveOne, saved the doc', result.ops[0])
         if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
         node.doc = result.ops[0]
         return node
@@ -93,7 +93,7 @@ class TryThings {
         // this.log('saveOne, entity to save', doc)
         return this.entities.saveOne(refs)
         .then((result) => {
-          this.log('saveOne, saved entity', result)
+          this.log('saveOne, saved entity', result.ops[0])
           if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
           node.doc = result.ops[0]
           return node
@@ -126,26 +126,26 @@ class TryThings {
   }
 
   doQueryTree(nodeId) {
-    return this.entities.aggregate([
+    return this.entities.collection.aggregate([
       {$match: {
         _id: nodeId
       }},
       {$graphLookup: {
         from: 'entities',
-        connectFromField: 'children.to',
-        startWith: '$children.to',
+        connectFromField: 'refs.to',
+        startWith: '$refs.to',
         connectToField: '_id',
         as: 'entities',
         depthField: 'depth'
       }},
       {$unwind: '$entities'},
       {$project: {
-        child: '$entities'
+        ref: '$entities'
       }},
       {$graphLookup: {
         from: 'resources',
-        connectFromField: 'child.children.to',
-        startWith: '$child.children.to',
+        connectFromField: 'ref.refs.to',
+        startWith: '$ref.refs.to',
         connectToField: '_id',
         as: 'resources',
         depthField: 'depth'
@@ -165,7 +165,7 @@ class TryThings {
 
   queryTree(nodeName) {
     if (!nodeName) {
-      this.doQueryTree(this.tree._id)
+      this.doQueryTree(this.tree.doc._id)
       .then((docs) => {
         this.log('queriedTree, docs', docs)
       })
