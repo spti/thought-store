@@ -121,6 +121,14 @@ class TryThings {
         _id: nodeId
       }},
       {$graphLookup: {
+        from: 'resources',
+        connectFromField: 'refs.to',
+        startWith: '$refs.to',
+        connectToField: '_id',
+        as: 'resourcesRoot',
+        depthField: 'depth'
+      }},
+      {$graphLookup: {
         from: 'entities',
         connectFromField: 'refs.to',
         startWith: '$refs.to',
@@ -130,6 +138,8 @@ class TryThings {
       }},
       {$unwind: '$entities'},
       {$project: {
+        resourcesRoot: 1,
+        refs: 1,
         ref: '$entities'
       }},
       {$graphLookup: {
@@ -176,7 +186,6 @@ class TryThings {
     }
   }
 
-  /*
   doBuildMap(aggregatedNodes) {
     const maps = {}
 
@@ -187,9 +196,9 @@ class TryThings {
 
       if (!maps[refId]) maps[refId] = ref
 
-      if (ref.resources.length > 0) {
-        for (var ii; ii < ref.resources.length; ii++) {
-          const resource = ref.resources[ii]
+      if (aggregatedNodes[i].resources && aggregatedNodes[i].resources.length > 0) {
+        for (var ii = 0; ii < aggregatedNodes[i].resources.length; ii++) {
+          const resource = aggregatedNodes[i].resources[ii]
           const resourceId = resource._id.toHexString()
 
           if (!maps[resourceId]) maps[resourceId] = resource
@@ -197,9 +206,23 @@ class TryThings {
       }
     }
 
-    this.log(maps)
     return maps
   }
+
+  buildMap(queryResult) {
+    const map = this.doBuildMap(queryResult)
+    queryResult[0].resourcesRoot.forEach((resource) => {map[resource._id.toHexString()] = resource})
+    map.root = {
+      _id: queryResult[0]._id.toHexString(),
+      refs: queryResult[0].refs
+    }
+
+    this.log('maps', map)
+    return map
+  }
+
+  /*
+
 
   doBuildTree(aggregatedNodes, maps, root) {
     const entities = []
@@ -287,11 +310,11 @@ class TryThings {
   queryAndBuild(nodeName) {
     if (!nodeName) {
 
-      return this.doQueryTree(this.tree._id)
+      return this.doQueryTree(this.tree.doc._id)
       .then((docs) => {
         // this.log("doQueryTree result", docs[0])
 
-        return this.buildTrees(docs[0], docs[0].nodes)
+        return this.buildMap(docs)
       })
     } else {
 
