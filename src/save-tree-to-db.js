@@ -107,6 +107,14 @@ class TryThings {
   saveTree(tree, maps) {
     return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, maps, this.saveOne.bind(this))
     .then((savedTree) => {
+      this.log('saved tree,', savedTree)
+      return savedTree
+    })
+  }
+
+  trySaveTree(tree, maps) {
+    return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, maps, this.saveOne.bind(this))
+    .then((savedTree) => {
       this.tree = savedTree
       this.log('saved tree,', savedTree)
     })
@@ -222,7 +230,6 @@ class TryThings {
   }
 
   /*
-
 
   doBuildTree(aggregatedNodes, maps, root) {
     const entities = []
