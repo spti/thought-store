@@ -19,44 +19,52 @@
   an entity can be simply a specification of how to display other entity or resource (there can be multiple ways of displayin one and the same entity/resource)
 */
 
+const ObjectId = require('mongodb').ObjectID
 
-const resources = {
-  schema: {
-    bsonType: "object",
-    anyOf: [
-      // text
-      {
-        bsonType: "object",
-        properties: {
-          _id: {
-            bsonType: "objectId"
-          },
-          text: {
-            bsonType: "string"
-          }
+const resourcesSchema = {
+  bsonType: "object",
+  anyOf: [
+    // text
+    {
+      bsonType: "object",
+      properties: {
+        _id: {
+          bsonType: "objectId"
         },
-        required: ['_id', 'text'],
-        additionalProperties: false
+        text: {
+          bsonType: "string"
+        }
       },
+      required: ['_id', 'text'],
+      additionalProperties: false
+    },
 
-      // url
-      {
-        bsonType: "object",
-        properties: {
-          _id: {
-            bsonType: "objectId"
-          },
-          url: {
-            bsonType: "string"
-          }
+    // url
+    {
+      bsonType: "object",
+      properties: {
+        _id: {
+          bsonType: "objectId"
         },
-        required: ['_id', 'url'],
-        additionalProperties: false
-      }
-    ]
-  },
-  create: function(db) {
-    return db.createCollection("resources", {
+        url: {
+          bsonType: "string"
+        }
+      },
+      required: ['_id', 'url'],
+      additionalProperties: false
+    }
+  ]
+}
+
+class Resources {
+  constructor(db) {
+    this.schema = resourcesSchema
+    this.db = db
+    this.name = "resources"
+  }
+
+  create() {
+    return this.db.createCollection(this.name, {
       validator: {
         $jsonSchema: this.schema
       },
@@ -64,51 +72,88 @@ const resources = {
     }).then((collection) => {
       return collection.createIndex({text: "text"})
       .then(() => {
-        return collection
+        this.collection = collection
+        return this
       })
       // return collection
     })
   }
+
+  saveOneText(text) {
+    return this.collection.insertOne({
+      text: text,
+      _id: new ObjectId()
+    })
+  }
 }
 
-const entities = {
-  schema: {
-    bsonType: "object",
-    properties: {
-      _id: {bsonType: 'objectId'},
-      refs: {
-        bsonType: "array",
-        items: {
-          bsonType: "object",
-          properties: {
-            _id: {bsonType: "objectId"},
-            // ref to resources, or entities
-            ref: { bsonType: "objectId" },
-            // ref to labels, or entities
-            label: { bsonType: "objectId" }
-          },
-          required: ['_id', 'ref'],
-          additionalProperties: false
+const entitiesSchema = {
+  bsonType: "object",
+  properties: {
+    _id: {bsonType: 'objectId'},
+    refs: {
+      bsonType: "array",
+      items: {
+        bsonType: "object",
+        properties: {
+          _id: {bsonType: "objectId"},
+          // ref to resources, or entities
+          coll: { bsonType: "string", /*enum: ['resources', 'entities']*/ },
+          to: { bsonType: "objectId" },
         },
-        additionalItems: false,
-        minItems: 1
+        required: ['_id', 'coll', 'to'],
+        additionalProperties: false
       },
-      view: {
-        bsonType: "objectId"
-      }
+      additionalItems: false,
+      minItems: 1
     },
-    required: ['_id', 'refs'],
-    additionalProperties: false
+    // view: {
+    //   bsonType: "objectId"
+    // }
   },
-  create: function(db) {
-    return db.createCollection("entities", {
+  required: ['_id', 'refs'],
+  additionalProperties: false
+}
+
+class Entities {
+  constructor(db) {
+    this.name = "entities"
+    this.schema = entitiesSchema
+    this.db = db
+  }
+
+  create() {
+    return this.db.createCollection(this.name, {
       validator: {
         $jsonSchema: this.schema
       },
       validationAction: "error"
     })
+    .then((coll) => {
+      this.collection = coll
+      return this
+    })
+  }
+
+  createRef(referee, collName, terminal) {
+    return {
+      to: referee._id,
+      coll: collName,
+      _id: new ObjectId()
+      // terminal: referee.terminal || false
+    }
+  }
+
+  saveOne(refs) {
+
+    return this.collection.insertOne({
+      _id: new ObjectId(),
+      refs: refs,
+    })
   }
 }
+
+
 
 const labels = {
   schema: {
@@ -161,4 +206,4 @@ const views = {
   }
 }
 
-module.exports = {entities, resources, views, labels}
+module.exports = {Entities, Resources, views, labels}
