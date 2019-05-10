@@ -39,29 +39,86 @@ class TryThings {
       this.entities = new models.Entities(this.db)
       this.resources = new models.Resources(this.db)
 
-      return this.createCollection(this.db)
+      return this.entities.init()
+      .then(() => {
+        return this.resources.init()
+      })
     })
   }
 
-  createCollection(db) {
-    return this.entities.create()
-    .then((model) => {
-      // this.entities = model
-      return this.resources.create()
-    })
-    .then((model) => {
-      // this.resources = model
-      return
-    })
-    // .then((collection) => {
-    //   return collection.createIndex({text: "text"})
-    //   .then(() => {
-    //     return collection
-    //   })
-    //   // return collection
-    // })
+  // this gets passed as a callback to saveDeepest, so
+  // we can be sure that for every @node, it's descendants
+  // (if it has those) are already saved/updated
+  saveOne(node, map) {
+    this.log('saveOne, node:', node)
+    if (node.status == 'new') {
+      if (node.type == 'resource') {
+        return new this.resources.Resource(node.text).save()
+        .then((instance) => {
+          map.saved[instance.doc._id] = instance
+          map.toSaved[node._id] = instance.doc._id
+
+          return instance.doc
+        })
+      } else if (node.type == 'entity') {
+        const refsNew = []
+
+        node.refs.forEach((ref) => {
+          const refNew = {
+            // as we save or update nodes (especially if we save new nodes), we will add
+            // them to the map.saved. But we will not update refs of ancestrial nodes to point
+            // to new ids. So we will have the toSaved mapping of old ids to new ones.
+            coll: map.saved[map.toSaved[ref.to || ref.toTerminal]].collection.collectionName
+          }
+
+          if (ref.toTerminal) {
+            refNew.toTerminal = false
+          }
+
+          if (ref.to) {
+            refNew.to = map.saved[map.toSaved[ref.to]
+          }
+        })
+
+        return new this.entities.Entity(refsNew).save()
+        .then((instance) => {
+          map.saved[instance.doc._id] = instance
+          map.toSaved[node._id] = instance.doc._id
+
+          // check for terminal refs and add the node to maps if there is
+          for (var i = 0; i < instance.doc.refs.length; i++) {
+            if (instance.doc.refs[i].toTerminal) {
+              // we use the real id, but the superficial refs, because using those
+              // we will be able to substitute patched toTerminal's with proper ids
+              map.withTerminalRefs[instance.doc._id] = node
+              break
+            }
+          }
+
+
+          return instance.doc
+        })
+      }
+    } else if (node.status == 'changed') {
+      if (node.type == 'resource') {
+        return this.resources.update(
+          node._id,
+          node.text
+        )
+        .then((instance) => {
+          return instance.doc
+        })
+
+      } else if (node.type == 'entity') {
+        return this.entities.update(node._id, node.refs)
+        .then((instance) => {
+          return instance.doc
+        })
+      }
+    }
   }
 
+  /*
   saveOne(node, maps) {
     this.log('saveOne, node', node);
     // const doc = {}
@@ -103,9 +160,61 @@ class TryThings {
     }
 
   }
+  */
 
-  saveTree(tree, maps) {
-    return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, maps, this.saveOne.bind(this))
+  trySaveOneEntity() {
+    const entity = new this.entities.Entity([
+      {to: new ObjectId(), coll: 'entities'},
+      {to: new ObjectId(), coll: 'entities'},
+      {to: new ObjectId(), coll: 'entities'},
+    ])
+
+    entity.save()
+    .then((instance) => {
+      this.log('tried and saved an entity', instance)
+    })
+  }
+
+  tryUpdateOneEntity() {
+    const entity = new this.entities.Entity([
+      {to: new ObjectId(), coll: 'entities'},
+      {to: new ObjectId(), coll: 'entities'},
+      {to: new ObjectId(), coll: 'entities'},
+    ])
+
+    entity.save()
+    .then((instance) => {
+      this.log('tried and saved an entity', instance)
+      const refs = [
+        {to: new ObjectId(), coll: 'entities'},
+        {to: new ObjectId(), coll: 'entities'},
+        {to: new ObjectId(), coll: 'entities'},
+        {to: new ObjectId(), coll: 'entities'},
+      ]
+
+      this.entities.update(instance.doc._id, refs)
+      .then((instance) => {
+        this.log('tried and updated an entity', instance)
+      })
+    })
+  }
+
+  trySaveOneResource() {
+    const resource = new this.resources.Resource("a test resource!")
+    resource.save()
+    .then((instance) => {
+      this.log('tried and saved a resource', instance)
+    })
+  }
+
+  saveTree(tree, map) {
+    const treeDescribed = lib.describeToSave(tree, map)
+    this.log('described tree to save, tree', treeDescribed)
+    map.saved = {}
+    map.toSaved = {}
+    map.withTerminalRefs = {}
+    // return
+    return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, map, this.saveOne.bind(this))
     .then((savedTree) => {
       this.log('saved tree,', savedTree)
       return savedTree
