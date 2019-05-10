@@ -188,7 +188,7 @@ function entityFactory(coll, options) {
       this.collection = coll
       this.terminal = terminal || false
 
-      this.log('Entity constructor, this', this)
+      // this.log('Entity constructor, this', this)
       this._id = new ObjectId()
       this.refs = refs.map((ref) => {
         const refNew = {}

@@ -53,11 +53,14 @@ class TryThings {
     this.log('saveOne, node:', node)
     if (node.status == 'new') {
       if (node.type == 'resource') {
-        return new this.resources.Resource(node.text).save()
+        const resource = new this.resources.Resource(node.text)
+        // this.log('saveOne, newly created resource:', resource)
+        return resource.save()
         .then((instance) => {
           map.saved[instance.doc._id] = instance
           map.toSaved[node._id] = instance.doc._id
 
+          // this.log('saveOne, saved resource:', instance.doc)
           return instance
         })
       } else if (node.type == 'entity') {
@@ -76,30 +79,36 @@ class TryThings {
           }
 
           if (ref.to) {
-            refNew.to = map.saved[map.toSaved[ref.to]]
+            refNew.to = map.saved[map.toSaved[ref.to]]._id
           }
+
+          refsNew.push(refNew)
         })
 
-        return new this.entities.Entity(refsNew).save()
+        const entity = new this.entities.Entity(refsNew)
+        // this.log('saveOne, newly created entity:', entity)
+        return entity.save()
         .then((instance) => {
           map.saved[instance.doc._id] = instance
           map.toSaved[node._id] = instance.doc._id
 
           // check for terminal refs and add the node to maps if there is
-          for (var i = 0; i < instance.doc.refs.length; i++) {
-            if (instance.doc.refs[i].toTerminal) {
-              // we use the real id, but the superficial refs, because using those
-              // we will be able to substitute patched toTerminal's with proper ids
-              map.withTerminalRefs[instance.doc._id] = node
-              break
-            }
-          }
+          // for (var i = 0; i < instance.doc.refs.length; i++) {
+          //   if (instance.doc.refs[i].toTerminal) {
+          //     // we use the real id, but the superficial refs, because using those
+          //     // we will be able to substitute patched toTerminal's with proper ids
+          //     map.withTerminalRefs[instance.doc._id] = node
+          //     break
+          //   }
+          // }
 
-
-          return instance.doc
+          // this.log('saveOne, saved entity:', instance.doc)
+          return instance
         })
       }
     } else if (node.status == 'changed') {
+      this.log('a node status is changed, returning for now:', node)
+      return
       if (node.type == 'resource') {
         return this.resources.update(
           node._id,
@@ -162,6 +171,33 @@ class TryThings {
   }
   */
 
+  saveTree(tree, map) {
+    const treeDescribed = lib.describeToSave(tree, map)
+    this.log('described tree to save, tree', treeDescribed)
+    map.saved = {}
+    map.toSaved = {}
+    map.withTerminalRefs = {}
+
+    // return
+    return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, map, this.saveOne.bind(this))
+    // .then((savedTree) => {
+    //   this.log('saved tree,', savedTree)
+    //   return savedTree
+    // })
+  }
+
+  trySaveTree(tree, maps) {
+    this.log('trees.thoughtsSimpleNew:', trees.thoughtsSimpleNew)
+    this.saveTree(trees.thoughtsSimpleNew.map.ids[trees.thoughtsSimpleNew.root], trees.thoughtsSimpleNew.map)
+    .then((savedThoughts) => {
+      // this.tree = savedTree
+      this.log('tried and saved tree,', savedThoughts)
+    })
+    .catch((err) => {
+      this.log('save tree failed', err)
+    })
+  }
+
   trySaveOneEntity() {
     const entity = new this.entities.Entity([
       {to: new ObjectId(), coll: 'entities'},
@@ -204,31 +240,6 @@ class TryThings {
     resource.save()
     .then((instance) => {
       this.log('tried and saved a resource', instance)
-    })
-  }
-
-  saveTree(tree, map) {
-    const treeDescribed = lib.describeToSave(tree, map)
-    this.log('described tree to save, tree', treeDescribed)
-    map.saved = {}
-    map.toSaved = {}
-    map.withTerminalRefs = {}
-    // return
-    return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, map, this.saveOne.bind(this))
-    .then((savedTree) => {
-      this.log('saved tree,', savedTree)
-      return savedTree
-    })
-  }
-
-  trySaveTree(tree, maps) {
-    return lib.saveDeepestAsync(tree || this.trees.tree0dbsSparse, maps, this.saveOne.bind(this))
-    .then((savedTree) => {
-      this.tree = savedTree
-      this.log('saved tree,', savedTree)
-    })
-    .catch((err) => {
-      this.log('save tree failed', err)
     })
   }
 

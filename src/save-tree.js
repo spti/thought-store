@@ -104,7 +104,7 @@ function saveDeepestAsync(tree, map, save) {
 
     if (!node.refs || node.refs.length == 0) {
       node.visited = true
-      return save(node)
+      return save(node, map)
     }
 
     // map children's lengths to an array, except those children that are already saved
@@ -197,7 +197,7 @@ function saveDeepestAsync(tree, map, save) {
 
   }
 
-  tree = maps.ids[tree._id]
+  tree = map.ids[tree._id]
 
   var depths = []
 
@@ -214,7 +214,10 @@ function saveDeepestAsync(tree, map, save) {
 
   return doSave(tree, depths)
   .then(() => {
-    return save(tree)
+    return save(tree, map)
+    .then((saved) => {
+      return {tree: saved, map: map}
+    })
   })
 }
 
