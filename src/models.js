@@ -74,7 +74,7 @@ function resourceFactory(coll) {
       })
       .then((result) => {
         if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
-        this.doc = results.ops[0]
+        this.doc = result.ops[0]
         return this
       })
     }
@@ -107,8 +107,8 @@ class Resources {
     }).then((collection) => {
       return collection.createIndex({text: "text"})
       .then(() => {
-        this.collection = collection
-        return this
+        // this.collection = collection
+        return collection
       })
       // return collection
     })
@@ -159,7 +159,7 @@ const entitiesSchema = {
               toTerminal: {
                 anyOf: [
                   {bsonType: "objectId"},
-                  {bsonType: "boolean"},
+                  {bsonType: "bool"},
                 ]},
             },
             required: ['coll', 'to'],
@@ -178,13 +178,17 @@ const entitiesSchema = {
   additionalProperties: false
 }
 
-function entityFactory(coll) {
+function entityFactory(coll, options) {
   return class {
     constructor(refs, terminal) {
+      options = options || {}
+      if (options.log) this.log = options.log
+
       this.type = 'entity'
       this.collection = coll
       this.terminal = terminal || false
 
+      this.log('Entity constructor, this', this)
       this._id = new ObjectId()
       this.refs = refs.map((ref) => {
         const refNew = {}
@@ -213,17 +217,24 @@ function entityFactory(coll) {
 }
 
 class Entities {
-  constructor(db) {
+  constructor(db, options) {
+    options = options || {}
+
     this.name = "entities"
     this.schema = entitiesSchema
     this.db = db
+
+    if (options.log) {
+      this.log = options.log
+    }
   }
 
   init() {
     return this.create()
     .then((collection) => {
       this.collection = collection
-      this.Entity = entityFactory(this.collection)
+      this.Entity = entityFactory(this.collection, {log: this.log})
+      // this.log('Entities model, this', this)
       return this
     })
   }
@@ -236,8 +247,8 @@ class Entities {
       validationAction: "error"
     })
     .then((coll) => {
-      this.collection = coll
-      return this
+      // this.collection = coll
+      return coll
     })
   }
 

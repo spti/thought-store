@@ -36,8 +36,8 @@ class TryThings {
         return Promise.reject(err)
       }
 
-      this.entities = new models.Entities(this.db)
-      this.resources = new models.Resources(this.db)
+      this.entities = new models.Entities(this.db, {log: this.log.bind(this)})
+      this.resources = new models.Resources(this.db, {log: this.log.bind(this)})
 
       return this.entities.init()
       .then(() => {
@@ -58,7 +58,7 @@ class TryThings {
           map.saved[instance.doc._id] = instance
           map.toSaved[node._id] = instance.doc._id
 
-          return instance.doc
+          return instance
         })
       } else if (node.type == 'entity') {
         const refsNew = []
@@ -76,7 +76,7 @@ class TryThings {
           }
 
           if (ref.to) {
-            refNew.to = map.saved[map.toSaved[ref.to]
+            refNew.to = map.saved[map.toSaved[ref.to]]
           }
         })
 
