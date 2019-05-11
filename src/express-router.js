@@ -19,6 +19,26 @@ const storage = multer.diskStorage({
 const upload = multer({storage: storage})
 */
 
+function doPrettifyMap(node, map, mapNew, coll) {
+  if (node.refs && node.refs.length > 0) {
+    node.refs.forEach((ref) => {
+      // mapNew.ids[ref.to] = map.saved[ref.to].doc
+      doPrettifyMap(map.saved[ref.to], map, mapNew, ref.coll)
+    })
+  }
+
+  node.doc.type = (coll == 'entities') ? 'entity' : 'resource'
+  mapNew.ids[node.doc._id] = node.doc
+  return {tree: node.doc, map: mapNew}
+}
+
+function prettifyMap(thoughts) {
+  return doPrettifyMap(
+    thoughts.tree, thoughts.map, {ids: {}},
+    (thoughts.tree.refs) ? 'entities' : 'resources'
+  )
+}
+
 function makeTheRouter(options) {
   options = options || {log: () => {}}
 
@@ -32,8 +52,14 @@ function makeTheRouter(options) {
     res.set('Content-Type', 'application/json')
 
     saver.saveTree(req.body.tree, req.body.map)
-    // this has to be the saved tree
-    res.send(JSON.stringify(req.body))
+    .then((result) => {
+      const thoughts = prettifyMap(result)
+
+      options.log('saved and prettified thoughts, sending', thoughts)
+      // this has to be the saved tree
+      res.send(JSON.stringify(thoughts))
+    })
+
 
     // saver.saveTree(req.body)
     // .then((thoughts) => {
