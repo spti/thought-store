@@ -186,63 +186,6 @@ class TryThings {
     // })
   }
 
-  trySaveTree(tree, maps) {
-    this.log('trees.thoughtsSimpleNew:', trees.thoughtsSimpleNew)
-    this.saveTree(trees.thoughtsSimpleNew.map.ids[trees.thoughtsSimpleNew.root], trees.thoughtsSimpleNew.map)
-    .then((savedThoughts) => {
-      // this.tree = savedTree
-      this.log('tried and saved tree,', savedThoughts)
-    })
-    .catch((err) => {
-      this.log('save tree failed', err)
-    })
-  }
-
-  trySaveOneEntity() {
-    const entity = new this.entities.Entity([
-      {to: new ObjectId(), coll: 'entities'},
-      {to: new ObjectId(), coll: 'entities'},
-      {to: new ObjectId(), coll: 'entities'},
-    ])
-
-    entity.save()
-    .then((instance) => {
-      this.log('tried and saved an entity', instance)
-    })
-  }
-
-  tryUpdateOneEntity() {
-    const entity = new this.entities.Entity([
-      {to: new ObjectId(), coll: 'entities'},
-      {to: new ObjectId(), coll: 'entities'},
-      {to: new ObjectId(), coll: 'entities'},
-    ])
-
-    entity.save()
-    .then((instance) => {
-      this.log('tried and saved an entity', instance)
-      const refs = [
-        {to: new ObjectId(), coll: 'entities'},
-        {to: new ObjectId(), coll: 'entities'},
-        {to: new ObjectId(), coll: 'entities'},
-        {to: new ObjectId(), coll: 'entities'},
-      ]
-
-      this.entities.update(instance.doc._id, refs)
-      .then((instance) => {
-        this.log('tried and updated an entity', instance)
-      })
-    })
-  }
-
-  trySaveOneResource() {
-    const resource = new this.resources.Resource("a test resource!")
-    resource.save()
-    .then((instance) => {
-      this.log('tried and saved a resource', instance)
-    })
-  }
-
   doQueryTree(nodeId) {
     return this.entities.collection.aggregate([
       {$match: {
@@ -268,12 +211,12 @@ class TryThings {
       {$project: {
         resourcesRoot: 1,
         refs: 1,
-        ref: '$entities'
+        referee: '$entities'
       }},
       {$graphLookup: {
         from: 'resources',
-        connectFromField: 'ref.refs.to',
-        startWith: '$ref.refs.to',
+        connectFromField: 'referee.refs.to',
+        startWith: '$referee.refs.to',
         connectToField: '_id',
         as: 'resources',
         depthField: 'depth'
@@ -319,10 +262,10 @@ class TryThings {
 
     var i = 0; const len = aggregatedNodes.length
     for (i; i < len; i++) {
-      const ref = aggregatedNodes[i].ref
-      const refId = ref._id.toHexString()
+      const referee = aggregatedNodes[i].referee
 
-      if (!maps[refId]) maps[refId] = ref
+      const refereeId = referee._id.toHexString()
+      if (!maps[refereeId]) maps[refereeId] = referee
 
       if (aggregatedNodes[i].resources && aggregatedNodes[i].resources.length > 0) {
         for (var ii = 0; ii < aggregatedNodes[i].resources.length; ii++) {
@@ -359,7 +302,6 @@ class TryThings {
 
 
   }
-  */
 
   doBuildTree(node, nodes) {
     this.log('doBuildTree, node', node.name)
@@ -434,33 +376,111 @@ class TryThings {
     return root
   }
 
-  queryAndBuild(nodeName) {
-    if (!nodeName) {
+  queryAndBuild(nodeId) {
+    // if (!nodeId) {
+    //
+    //   return this.doQueryTree(this.tree.doc._id)
+    //   .then((docs) => {
+    //     // this.log("doQueryTree result", docs[0])
+    //
+    //     return this.buildMap(docs)
+    //   })
+    // } else {
 
-      return this.doQueryTree(this.tree.doc._id)
-      .then((docs) => {
-        // this.log("doQueryTree result", docs[0])
-
-        return this.buildMap(docs)
-      })
-    } else {
-
-      return this.one.findOne({name: nodeName})
+      return this.entities.collection.findOne({_id: nodeId})
       .then((result) => {
         return this.doQueryTree(result._id)
         .then((docs) => {
-          // this.log("doQueryTree result", docs[0])
+          this.log("doQueryTree result", docs)
 
           return this.buildTrees(docs[0], docs[0].nodes)
         })
       })
-    }
+    // }
   }
+  */
 
   setTree(tree) {
     this.tree = tree
   }
 
+  trySaveTree(tree, maps) {
+    this.log('trees.thoughtsSimpleNew:', trees.thoughtsSimpleNew)
+    this.saveTree(trees.thoughtsSimpleNew.map.ids[trees.thoughtsSimpleNew.root], trees.thoughtsSimpleNew.map)
+    .then((savedThoughts) => {
+      // this.tree = savedTree
+      this.log('tried and saved tree,', savedThoughts)
+    })
+    .catch((err) => {
+      this.log('save tree failed', err)
+    })
+  }
+
+  trySaveAndQueryTree() {
+    this.saveTree(trees.thoughtsSimpleNew.map.ids[trees.thoughtsSimpleNew.root], trees.thoughtsSimpleNew.map)
+    .then((savedThoughts) => {
+      // this.tree = savedTree
+      this.log('tried and saved tree,', savedThoughts)
+      return this.doQueryTree(savedThoughts.tree._id)
+    })
+    .then((result) => {
+      this.log('didQueryTree, result', result)
+      return this.buildMap(result)
+    })
+    .then((thoughts) => {
+      this.log('queried saved thoughts:', thoughts)
+    })
+    .catch((err) => {
+      this.log('errored somewhere while querying tree and buildng map', err)
+    })
+  }
+
+  trySaveOneEntity() {
+    const entity = new this.entities.Entity([
+      {to: new ObjectId(), coll: 'entities'},
+      {to: new ObjectId(), coll: 'entities'},
+      {to: new ObjectId(), coll: 'entities'},
+    ])
+
+    entity.save()
+    .then((instance) => {
+      this.log('tried and saved an entity', instance)
+    })
+  }
+
+  tryUpdateOneEntity() {
+    const entity = new this.entities.Entity([
+      {to: new ObjectId(), coll: 'entities'},
+      {to: new ObjectId(), coll: 'entities'},
+      {to: new ObjectId(), coll: 'entities'},
+    ])
+
+    entity.save()
+    .then((instance) => {
+      this.log('tried and saved an entity', instance)
+      const refs = [
+        {to: new ObjectId(), coll: 'entities'},
+        {to: new ObjectId(), coll: 'entities'},
+        {to: new ObjectId(), coll: 'entities'},
+        {to: new ObjectId(), coll: 'entities'},
+      ]
+
+      this.entities.update(instance.doc._id, refs)
+      .then((instance) => {
+        this.log('tried and updated an entity', instance)
+      })
+    })
+  }
+
+  trySaveOneResource() {
+    const resource = new this.resources.Resource("a test resource!")
+    resource.save()
+    .then((instance) => {
+      this.log('tried and saved a resource', instance)
+    })
+  }
+
+  /*
   createDocWithRef() {
     return this.one.insertOne({a: 'referee'})
     .then((result) => {
@@ -497,6 +517,7 @@ class TryThings {
       this.log('err occured whaile doGetDocWithRef', err)
     })
   }
+  */
 
   doDrop() {
     if (this.db) {
