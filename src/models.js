@@ -56,11 +56,46 @@ const resourcesSchema = {
   ]
 }
 
+function resourceFactory(coll) {
+  return class {
+    constructor(text) {
+      this.type = 'resource'
+      this.collection = coll
+
+      this._id = new ObjectId()
+      this.id = this._id.toHexString()
+      this.text = text
+    }
+
+    save() {
+      return this.collection.insertOne({
+        _id: this._id,
+        text: this.text
+      })
+      .then((result) => {
+        if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
+        this.doc = result.ops[0]
+        return this
+      })
+    }
+  }
+}
+
 class Resources {
   constructor(db) {
     this.schema = resourcesSchema
     this.db = db
     this.name = "resources"
+
+  }
+
+  init() {
+    return this.create()
+    .then((collection) => {
+      this.collection = collection
+      this.Resource = resourceFactory(this.collection)
+      return this
+    })
   }
 
   create() {
@@ -72,19 +107,32 @@ class Resources {
     }).then((collection) => {
       return collection.createIndex({text: "text"})
       .then(() => {
-        this.collection = collection
-        return this
+        // this.collection = collection
+        return collection
       })
       // return collection
     })
   }
 
-  saveOneText(text) {
-    return this.collection.insertOne({
-      text: text,
-      _id: new ObjectId()
+  update(id, text) {
+    return this.collection.findOneAndUpdate(
+      {_id: id}, // or node.realId, or node._id...
+      {$set: {text: text}},
+      {returnOriginal: false}
+    )
+    .then((result) => {
+      if (!result.ok) {
+        return Promise.reject(result)
+      }
+
+      return {
+        type: 'resource',
+        collection: this.collection,
+        doc: result.value
+      }
     })
   }
+
 }
 
 const entitiesSchema = {
@@ -95,14 +143,30 @@ const entitiesSchema = {
       bsonType: "array",
       items: {
         bsonType: "object",
-        properties: {
-          _id: {bsonType: "objectId"},
-          // ref to resources, or entities
-          coll: { bsonType: "string", /*enum: ['resources', 'entities']*/ },
-          to: { bsonType: "objectId" },
-        },
-        required: ['_id', 'coll', 'to'],
-        additionalProperties: false
+        anyOf: [
+          {
+            properties: {
+              // ref to resources, or entities
+              coll: { bsonType: "string", /*enum: ['resources', 'entities']*/ },
+              to: { bsonType: "objectId" },
+            },
+            required: ['coll', 'to'],
+            additionalProperties: false
+          },
+          {
+            properties: {
+              // ref to resources, or entities
+              coll: { bsonType: "string", /*enum: ['resources', 'entities']*/ },
+              toTerminal: {
+                anyOf: [
+                  {bsonType: "objectId"},
+                  {bsonType: "bool"},
+                ]},
+            },
+            required: ['coll', 'to'],
+            additionalProperties: false
+          },
+        ],
       },
       additionalItems: false,
       minItems: 1
@@ -115,11 +179,65 @@ const entitiesSchema = {
   additionalProperties: false
 }
 
+function entityFactory(coll, options) {
+  return class {
+    constructor(refs, terminal) {
+      options = options || {}
+      if (options.log) this.log = options.log
+
+      this.type = 'entity'
+      this.collection = coll
+      this.terminal = terminal || false
+
+      // this.log('Entity constructor, this', this)
+      this._id = new ObjectId()
+      this.refs = refs.map((ref) => {
+        const refNew = {}
+
+        if (!ref.to && !ref.toTerminal) throw new Error('invalid dref format')
+        if (ref.to) refNew.to = ref.to
+        if (ref.toTerminal) refNew.toTerminal = ref.toTerminal
+        refNew.coll = ref.coll
+        return refNew
+      })
+
+    }
+
+    save() {
+      return this.collection.insertOne({
+        _id: this._id,
+        refs: this.refs
+      })
+      .then((result) => {
+        if (result.insertedCount != 1) return Promise.reject(new Error('writeResult.n is not 1'))
+        this.doc = result.ops[0]
+        return this
+      })
+    }
+  }
+}
+
 class Entities {
-  constructor(db) {
+  constructor(db, options) {
+    options = options || {}
+
     this.name = "entities"
     this.schema = entitiesSchema
     this.db = db
+
+    if (options.log) {
+      this.log = options.log
+    }
+  }
+
+  init() {
+    return this.create()
+    .then((collection) => {
+      this.collection = collection
+      this.Entity = entityFactory(this.collection, {log: this.log})
+      // this.log('Entities model, this', this)
+      return this
+    })
   }
 
   create() {
@@ -130,8 +248,37 @@ class Entities {
       validationAction: "error"
     })
     .then((coll) => {
-      this.collection = coll
-      return this
+      // this.collection = coll
+      return coll
+    })
+  }
+
+  update(id, refs) {
+    return this.collection.findOneAndUpdate(
+      {_id: id}, // or node.realId, or node._id...
+      {$set: {refs: refs.map((ref) => {
+        const refNew = {coll: ref.coll}
+
+        if (ref.toTerminal) {
+          refNew.toTerminal = ref.toTerminal
+        } else if (ref.to) {
+          refNew.to = ref.to
+        }
+
+        return refNew
+      })}},
+      {returnOriginal: false}
+    )
+    .then((result) => {
+      if (!result.ok) {
+        return Promise.reject(result)
+      }
+
+      return {
+        type: 'entity',
+        collection: this.collection,
+        doc: result.value
+      }
     })
   }
 
