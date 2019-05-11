@@ -115,9 +115,10 @@ class Resources {
   }
 
   update(id, text) {
-    this.collection.findOneAndUpdate(
+    return this.collection.findOneAndUpdate(
       {_id: id}, // or node.realId, or node._id...
-      {$set: {text: text}}
+      {$set: {text: text}},
+      {returnOriginal: false}
     )
     .then((result) => {
       if (!result.ok) {
@@ -253,10 +254,11 @@ class Entities {
   }
 
   update(id, refs) {
-    this.entities.collection.findOneAndUpdate(
+    return this.collection.findOneAndUpdate(
       {_id: id}, // or node.realId, or node._id...
       {$set: {refs: refs.map((ref) => {
-        const refNew = {coll: 'entity'}
+        const refNew = {coll: ref.coll}
+
         if (ref.toTerminal) {
           refNew.toTerminal = ref.toTerminal
         } else if (ref.to) {
@@ -264,7 +266,8 @@ class Entities {
         }
 
         return refNew
-      })}}
+      })}},
+      {returnOriginal: false}
     )
     .then((result) => {
       if (!result.ok) {

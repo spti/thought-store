@@ -465,10 +465,22 @@ class TryThings {
         {to: new ObjectId(), coll: 'entities'},
       ]
 
-      this.entities.update(instance.doc._id, refs)
-      .then((instance) => {
-        this.log('tried and updated an entity', instance)
-      })
+      return this.entities.update(instance.doc._id, refs)
+    })
+    .then((instanceUpdated) => {
+      this.log('tried and updated an entity', instanceUpdated)
+      // return this.entities.collection.findOne({_id: instanceUpdated.doc._id})
+      // .then((result) => {
+      //   this.log('found the updated doc:', result)
+      // })
+      // .catch((err) => {
+      //   this.log('errored when trying to find the updated doc', err)
+      //   return Promise.reject(err)
+      // })
+
+    })
+    .catch((err) => {
+      this.log('errored when tryingUpdateOneEntity', err)
     })
   }
 
@@ -477,6 +489,21 @@ class TryThings {
     resource.save()
     .then((instance) => {
       this.log('tried and saved a resource', instance)
+    })
+  }
+
+  tryUpdateOneResource() {
+    const resource = new this.resources.Resource("a test resource!")
+    resource.save()
+    .then((instance) => {
+      this.log('tried and saved a resource', instance)
+      return this.resources.update(instance.doc._id, 'this is the updated resource!')
+    })
+    .then((result) => {
+      this.log('tried and updated the resource', result)
+    })
+    .catch((err) => {
+      this.log('err during tryingUpdateOneResource', err)
     })
   }
 
