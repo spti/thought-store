@@ -52,15 +52,18 @@ class TryThings {
   saveOne(node, map) {
     this.log('saveOne, node:', node)
     if (node.status == 'new') {
+      this.log('saveOne, a node status is new', node)
       if (node.type == 'resource') {
         const resource = new this.resources.Resource(node.text)
         // this.log('saveOne, newly created resource:', resource)
         return resource.save()
         .then((instance) => {
-          map.saved[instance.doc._id] = instance
-          map.toSaved[node._id] = instance.doc._id
+          map.saved[instance.doc._id.toHexString()] = instance
+          map.toSaved[node._id] = instance.doc._id.toHexString()
+          // map.saved[instance.doc._id.toHexString()] = instance
+          // map.toSaved[node._id] = instance.doc._id.toHexString()
 
-          // this.log('saveOne, saved resource:', instance.doc)
+          this.log('saveOne, saved resource:', instance)
           return instance
         })
       } else if (node.type == 'entity') {
@@ -89,8 +92,8 @@ class TryThings {
         // this.log('saveOne, newly created entity:', entity)
         return entity.save()
         .then((instance) => {
-          map.saved[instance.doc._id] = instance
-          map.toSaved[node._id] = instance.doc._id
+          map.saved[instance.doc._id.toHexString()] = instance
+          map.toSaved[node._id] = instance.doc._id.toHexString()
 
           // check for terminal refs and add the node to maps if there is
           // for (var i = 0; i < instance.doc.refs.length; i++) {
@@ -102,28 +105,82 @@ class TryThings {
           //   }
           // }
 
-          // this.log('saveOne, saved entity:', instance.doc)
+          this.log('saveOne, saved entity:', instance)
           return instance
         })
       }
     } else if (node.status == 'changed') {
-      this.log('a node status is changed, returning for now:', node)
-      return
+      this.log('a node status is changed', node)
+      // return
       if (node.type == 'resource') {
         return this.resources.update(
-          node._id,
+          new ObjectId(node._id),
           node.text
         )
         .then((instance) => {
-          return instance.doc
+          map.saved[instance._id.toHexString()] = instance
+          map.toSaved[instance._id.toHexString()] = instance._id.toHexString()
+
+          this.log('updated resource', instance)
+          return instance
         })
 
       } else if (node.type == 'entity') {
-        return this.entities.update(node._id, node.refs)
+        const refsNew = []
+
+        node.refs.forEach((ref) => {
+          const refNew = {
+            // as we save or update nodes (especially if we save new nodes), we will add
+            // them to the map.saved. But we will not update refs of ancestrial nodes to point
+            // to new ids. So we will have the toSaved mapping of old ids to new ones.
+            coll: map.saved[map.toSaved[ref.to || ref.toTerminal]].collection.collectionName
+          }
+
+          if (ref.toTerminal) {
+            refNew.toTerminal = false
+          }
+
+          if (ref.to) {
+            refNew.to = map.saved[map.toSaved[ref.to]].doc._id
+          }
+
+          refsNew.push(refNew)
+        })
+
+        this.log('saveOne, entity is to update, new refs:', refsNew)
+
+        return this.entities.update(new ObjectId(node._id), refsNew)
         .then((instance) => {
-          return instance.doc
+          map.saved[instance._id.toHexString()] = instance
+          map.toSaved[instance._id.toHexString()] = instance._id.toHexString()
+
+          this.log('updated entity', instance)
+          return instance
         })
       }
+    } else if (node.status == 'unchanged') {
+      this.log('node unchanged, node', node)
+      var instance = null
+
+      if (node.type == 'entity') {
+        instance = new this.entities.Entity(node.refs.map((ref) => {
+          var refNew = {coll: map.saved[map.toSaved[ref.to || ref.toTerminal]].collection.collectionName}
+          if (ref.to) refNew.to = ref.to
+          if (ref.toTerminal) refNew.toTerminal = ref.toTerminal
+          return refNew
+        }), {id: node._id})
+      } else if (node.type == 'resource') {
+        instance = new this.resources.Resource(node.text, {id: node._id})
+      } else {
+        return Promise.reject(new Error('node must have a type, instead got', node.type))
+      }
+
+      this.log('node unchanged, instance', instance)
+      instance.doc = node
+      map.saved[instance._id] = instance
+      map.toSaved[instance._id] = instance._id
+
+      return Promise.resolve(instance)
     }
   }
 

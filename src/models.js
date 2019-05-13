@@ -58,12 +58,14 @@ const resourcesSchema = {
 
 function resourceFactory(coll) {
   return class {
-    constructor(text) {
+    constructor(text, options) {
+      options = options || {}
+
       this.type = 'resource'
       this.collection = coll
 
-      this._id = new ObjectId()
-      this.id = this._id.toHexString()
+      this._id = options.id || new ObjectId()
+      // this.id = this._id.toHexString()
       this.text = text
     }
 
@@ -128,7 +130,8 @@ class Resources {
       return {
         type: 'resource',
         collection: this.collection,
-        doc: result.value
+        doc: result.value,
+        _id: result.value._id
       }
     })
   }
@@ -179,18 +182,19 @@ const entitiesSchema = {
   additionalProperties: false
 }
 
-function entityFactory(coll, options) {
+function entityFactory(coll, _options) {
+  _options = _options || {}
   return class {
-    constructor(refs, terminal) {
+    constructor(refs, options) {
       options = options || {}
-      if (options.log) this.log = options.log
+      if (_options.log) this.log = _options.log
 
       this.type = 'entity'
       this.collection = coll
-      this.terminal = terminal || false
+      this.terminal = options.terminal || false
 
       // this.log('Entity constructor, this', this)
-      this._id = new ObjectId()
+      this._id = options.id || new ObjectId()
       this.refs = refs.map((ref) => {
         const refNew = {}
 
@@ -260,9 +264,9 @@ class Entities {
         const refNew = {coll: ref.coll}
 
         if (ref.toTerminal) {
-          refNew.toTerminal = ref.toTerminal
+          refNew.toTerminal = new ObjectId(ref.toTerminal)
         } else if (ref.to) {
-          refNew.to = ref.to
+          refNew.to = new ObjectId(ref.to)
         }
 
         return refNew
@@ -270,14 +274,17 @@ class Entities {
       {returnOriginal: false}
     )
     .then((result) => {
+      this.log('Entities.update, result', result)
       if (!result.ok) {
         return Promise.reject(result)
       }
 
       return {
         type: 'entity',
+        _id: result.value._id,
+        refs: result.value.refs,
+        doc: result.value,
         collection: this.collection,
-        doc: result.value
       }
     })
   }

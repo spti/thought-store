@@ -53,6 +53,7 @@ function makeTheRouter(options) {
 
     saver.saveTree(req.body.tree, req.body.map)
     .then((result) => {
+      options.log('router, savedTree', result)
       const thoughts = prettifyMap(result)
 
       options.log('saved and prettified thoughts, sending', thoughts)
