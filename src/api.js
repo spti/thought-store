@@ -1,5 +1,9 @@
+const Dev = require('../dev.js')
+
 class ThoughtsApi extends Dev {
-  constructor(crudTree) {
+  constructor(crudTree, options) {
+    super((options.devEnv) ? options.devEnv : false)
+
     this.crud = crudTree
   }
 
@@ -12,5 +16,6 @@ class ThoughtsApi extends Dev {
     })
   }
 
-
 }
+
+module.exports = ThoughtsApi

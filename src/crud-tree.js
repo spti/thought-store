@@ -1,13 +1,15 @@
-const MongoClient = require('mongodb').MongoClient
+// const MongoClient = require('mongodb').MongoClient
+const Dev = require('../dev.js')
 const DBRef = require('mongodb').DBRef
 const ObjectId = require('mongodb').ObjectID
-// const schemas = require('./schema.js')
-const lib = require('./save-tree.js')
-const trees = require('./fake-trees.js')
-const models = require('./models.js')
+const lib = require('./crud-tree-lib.js')
+// const trees = require('./fake-trees.js')
+// const models = require('./models.js')
 
-class TryThings {
+class CrudTree extends Dev {
   constructor(models, options) {
+    super((options.devEnv) ? options.devEnv : false)
+
     options = options || {}
     this.devEnv = options.devEnv || false
     // this.logs = []
@@ -318,4 +320,4 @@ class TryThings {
   }
 }
 
-module.exports = instantiate()
+module.exports = CrudTree

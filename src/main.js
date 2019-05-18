@@ -1,12 +1,13 @@
+const MongoClient = require('mongodb').MongoClient
 const express = require('express')
-const Dev = require('./dev.js')
+const Dev = require('../dev.js')
 const helpers = require('../util/helpers.js')
 
-const Db = require('./db.js')
 const models = require('./models.js')
-const CrudTree = require('./save-tree-to-db.js')
+const CrudTree = require('./crud-tree.js')
+// const CrudTreeTest = require('./crud-tree.js')
 
-const router = require('./express-router.js')
+const router = require('./api-routes.js')
 
 const connectionData = {
   url: "mongodb://localhost:27017",
@@ -17,6 +18,7 @@ const connectionData = {
 class Main extends Dev {
   constructor(dbData, options) {
     super((options.devEnv) ? options.devEnv : false)
+    this.options = options || {}
 
     this.dbUrl = dbData.url
     this.dbName = dbData.name
@@ -52,12 +54,14 @@ class Main extends Dev {
 
   init() {
     this.initDb(this.dbUrl, this.dbName)
-    .then((db) => {
-      this.db = db
+    .then((result) => {
+      this.mongoClient = result.client
+      this.db = result.db
       return this.initCrudTree(this.db, models)
     })
-    .then((crudTree) => {
-      this.crudTree = crudTree
+    .then((result) => {
+      this.crudTree = result.crudTree
+      this.crudTreeTest = result.crudTreeTest
       var api = null
 
       try {
@@ -78,9 +82,23 @@ class Main extends Dev {
     })
   }
 
-  initDb(url, name) {
-    const db = new Db(url, name)
-    return db.init()
+  initDb(url, name, clientOps) {
+    const client = new MongoClient(url, options.clientOps || {})
+    return client.connect()
+    .then(() => {
+      var db = null
+
+      try {
+        db = client.db(name)
+      } catch(err) {
+        return Promise.reject(err)
+      }
+
+      return {client, db}
+    })
+
+    // const db = new Db(url, name)
+    // return db.init()
   }
 
   initCrudTree(db, models) {
@@ -92,8 +110,16 @@ class Main extends Dev {
       return resources.init()
     })
     .then(() => {
-      const crudTree = new CrudTree({entities, resources}, {devEnv: true})
-      return crudTree
+      var crudTree = null
+      var crudTreeTest = null
+      try {
+        crudTree = new CrudTree({entities, resources}, {devEnv: true})
+        // crudTreeTest = new CrudTreeTest(crudTree, {devEnv: true})
+      } catch (err) {
+        Promise.reject(err)
+      }
+
+      return { crudTree } // , crudTreeTest
     })
   }
 
@@ -119,10 +145,13 @@ const main = new Main(
   {devEnv: true}
 )
 
-main.init()
-.then((main) => {
-  main.log('main initialized', main)
-})
-.catch((err) => {
-  main.log('error during main.init', err)
-})
+module.exports = function() {
+  return main.init()
+  .then((main) => {
+    main.log('main initialized', main)
+    return main
+  })
+  .catch((err) => {
+    main.log('error during main.init', err)
+  })
+}

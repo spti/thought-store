@@ -12,3 +12,5 @@ class Dev {
     }
   }
 }
+
+module.exports = Dev
