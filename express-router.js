@@ -3,8 +3,8 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const bodyParserJson = bodyParser.json({type: 'application/json'})
 
-const treelib = require('./save-tree.js')
-const saver = require('./save-tree-to-db.js')
+// const treelib = require('./save-tree.js')
+// const saver = require('./save-tree-to-db.js')
 /*
 const multer = require('multer')
 const storage = multer.diskStorage({
@@ -73,7 +73,7 @@ function makeTheRouter(api, options) {
   })
 
   router.use('/public', static)
-  return {router, saver}
+  return router
 }
 
 
