@@ -7,7 +7,8 @@ const models = require('./models.js')
 const CrudTree = require('./crud-tree.js')
 // const CrudTreeTest = require('./crud-tree.js')
 
-const router = require('./api-routes.js')
+const ThoughtsApi = require('./api.js')
+const apiRoutes = require('./api-routes.js')
 
 const connectionData = {
   url: "mongodb://localhost:27017",
@@ -53,7 +54,7 @@ class Main extends Dev {
   */
 
   init() {
-    this.initDb(this.dbUrl, this.dbName)
+    return this.initDb(this.dbUrl, this.dbName, this.options.clientOps || {})
     .then((result) => {
       this.mongoClient = result.client
       this.db = result.db
@@ -65,7 +66,7 @@ class Main extends Dev {
       var api = null
 
       try {
-        api = new ThoughtsApi(this.crudTree)
+        api = new ThoughtsApi(this.crudTree, {devEnv: true})
       } catch (err) {
         Promise.reject(err)
       }
@@ -83,7 +84,7 @@ class Main extends Dev {
   }
 
   initDb(url, name, clientOps) {
-    const client = new MongoClient(url, options.clientOps || {})
+    const client = new MongoClient(url, clientOps || {})
     return client.connect()
     .then(() => {
       var db = null
@@ -129,7 +130,7 @@ class Main extends Dev {
 
   initServerAndRouter(port, rootRoute) {
     const server = express()
-    const router = router.makeTheRouter(this.api, {log: this.log.bind(this)})
+    const router = apiRoutes.makeTheRouter(this.api, {log: this.log.bind(this)})
     server.use(rootRoute, router)
     server.listen(port)
 
@@ -137,15 +138,15 @@ class Main extends Dev {
   }
 }
 
-const main = new Main(
-  {
-    url: connectionData.url,
-    name: connectionData.dbName
-  },
-  {devEnv: true}
-)
-
 module.exports = function() {
+  const main = new Main(
+    {
+      url: connectionData.url,
+      name: connectionData.dbName
+    },
+    {devEnv: true}
+  )
+
   return main.init()
   .then((main) => {
     main.log('main initialized', main)

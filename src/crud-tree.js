@@ -4,7 +4,7 @@ const DBRef = require('mongodb').DBRef
 const ObjectId = require('mongodb').ObjectID
 const lib = require('./crud-tree-lib.js')
 // const trees = require('./fake-trees.js')
-// const models = require('./models.js')
+const modelClasses = require('./models.js')
 
 class CrudTree extends Dev {
   constructor(models, options) {
@@ -26,10 +26,11 @@ class CrudTree extends Dev {
     // })
 
     // here I should also check if the models are initialized
+    console.log('crudTree, constructor, modelClasses', modelClasses)
     var modelsErr =
       (!models.entities || !models.resources)
         ? new Error("models.entities and models.resources are both required")
-        : (!(models.entities instanceof models.Entites) || !(models.resource instanceof models.Resource))
+        : (!(models.entities instanceof modelClasses.Entities) || !(models.resources instanceof modelClasses.Resources))
           ? new TypeError("models must be instances of classes, defined in models")
           : null
 
