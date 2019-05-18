@@ -1,17 +1,16 @@
 const express = require('express')
 const router = require('./express-router.js')
 // const saver = require('./save-tree-to-db.js')
+const Dev = require('./dev.js')
+const mediator = require('./mediator.js')
 
 console.log(router)
-class ExpressServer {
+class ExpressServer extends Dev {
   constructor(options) {
+    super((options.devEnv) ? options.devEnv : false)
+
     this.options = options || {}
-    this.devEnv = options.devEnv || false
-    this.logs = []
 
-    // this.saver = saver
-
-    // this.routerFactory = routerFactory
     this.init()
     // .then(() => {
     //   this.log("created collections", lastCreatedColl)
