@@ -32,11 +32,11 @@ function makeTheRouter(api, options) {
   const static = express.static(path.join(__dirname, '../../thought-store_frontend/dist/'))
 
   router.post('/save-tree', bodyParserJson, (req, res) => {
-    // options.log('post /new-tree, body', req.body)
+    options.log('api-route save-tree, body', req.body)
 
     api.saveTree(req.body)
     .then((responseData) => {
-      // options.log('router, savedTree', result)
+      options.log('api-route save-tree, api.saveTree returned', responseData)
 
       try {
         JSON.parse(responseData)

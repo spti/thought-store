@@ -66,7 +66,7 @@ class Main extends Dev {
       var api = null
 
       try {
-        api = new ThoughtsApi(this.crudTree, {devEnv: true})
+        api = new ThoughtsApi(this.crudTree, {devEnv: true, log: this.log.bind(this)})
       } catch (err) {
         Promise.reject(err)
       }
