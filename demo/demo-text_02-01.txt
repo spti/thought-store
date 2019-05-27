@@ -1,0 +1,15 @@
+{{
+  [[separation of concerns]] is a very powerful {{idea}}. It can be applied
+  in all sorts of areas. I learnt in from programming, but it's extremely
+  useful in {{thinking}} itself.
+
+  {{ When you think about various [[phenomena]], and especially, {{abstractions}} you're able to
+  derive from those phenomena, separation of concerns comes in handy. It helps {{separate
+  out essential qualities (properties) of the phenomenon}}, and {{make an [[abstraction]]}}, which you can
+  then apply to a broader set of phenomena. It also helps to {{make sure that you don't take the
+  effect of some other thing to be caused by the thing you're examining}}.
+   }}
+
+   It's generally very interesting, how thinking exponentially raises the efficiency of our activity in life.
+}}
+  

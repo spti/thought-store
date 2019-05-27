@@ -1,20 +1,39 @@
 const path = require("path")
-const fs = require("fs").promises
-const parser = require("thought-store_syntax-parser")
-const converter = require("../src/convert.js")
+const helpers = require('../src/helpers.js')
+// const converter = require("../src/convert.js")
 
-function readAndParse() {
 
-  return fs.readFile(path.resolve(__dirname, 'demo-text_01.txt'), {encoding: 'utf8'})
-  .then((fileStr) => {
-    console.log("file contents: ", fileStr)
-    const syntaxTree = parser.parse(fileStr)
+class Demo {
+  constructor(options) {
 
-    converter.convert(syntaxTree[0])
-    return syntaxTree[0]
-  })
-  .catch(err => console.log('err on reading file', err))
+    options = options || {}
+    this.devEnv = options.devEnv || false
+    this.logs = []
+    this.parsedFiles = []
+  }
+
+  parseFile() {
+    return helpers.parseFile(path.resolve(__dirname, 'demo-text_02-01.txt'))
+  }
+
+  run() {
+    this.parseFile()
+    .then((parser) => {
+      this.log("parsed the file, parser", parser)
+      this.parsedFiles.unshift(parser.results)
+    })
+    .catch((err) => {
+      this.log("something got fucked up,", err)
+    })
+  }
+
+  log(msg, data) {
+    if (this.devEnv) {
+      this.logs.unshift({msg, data})
+      console.log(msg, data)
+    }
+  }
 }
 
 // readTheFuckingFile()
-module.exports = {readAndParse}
+module.exports = {demo: new Demo({devEnv: true})}
